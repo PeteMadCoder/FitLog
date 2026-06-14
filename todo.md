@@ -33,7 +33,7 @@
 - [x] **2.4. Live Map View**
     - Implement `ActiveWorkoutScreen` in `features/tracking/views/`.
     - Use `flutter_map` to show the user's current position and the breadcrumb trail (polyline).
-- [ ] **2.5. Real-time Metrics Display**
+- [x] **2.5. Real-time Metrics Display**
     - Create widgets to show Duration, Distance, and Current Speed during the workout.
     - Implement a basic `PaceCalculator` utility in `lib/core/utils/`.
 

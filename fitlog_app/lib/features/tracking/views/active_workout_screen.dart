@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
-import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
+import 'package:fitlog_app/features/tracking/widgets/workout_metrics_widgets.dart';
 
 /// Screen displayed during an active workout session.
 /// Renders a live map, routes breadcrumbs, real-time metrics, and pause/resume/stop controls.
@@ -54,10 +54,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         }
       });
     }
-
-    final duration = Duration(seconds: trackingState.durationSeconds.toInt());
-    final speedKmH = trackingState.currentSpeed * 3.6;
-    final distanceKm = trackingState.distanceMeters / 1000.0;
 
     return Scaffold(
       body: Stack(
@@ -208,27 +204,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Metrics display row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildMetric(
-                        context,
-                        label: 'TIME',
-                        value: duration.toHoursMinutesSeconds(),
-                      ),
-                      _buildMetric(
-                        context,
-                        label: 'DISTANCE',
-                        value: '${distanceKm.toStringAsFixed(2)} km',
-                      ),
-                      _buildMetric(
-                        context,
-                        label: 'SPEED',
-                        value: '${speedKmH.toStringAsFixed(1)} km/h',
-                      ),
-                    ],
-                  ),
+                  const WorkoutMetricsGrid(),
                   const SizedBox(height: 24),
                   
                   // Tracking action buttons
@@ -284,31 +260,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMetric(BuildContext context, {required String label, required String value}) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
-          ),
-        ),
-      ],
     );
   }
 
