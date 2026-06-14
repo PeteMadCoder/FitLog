@@ -14,14 +14,14 @@ String _$permissionServiceHash() => r'9a1b6c0a415f5fa9b63927c89cd3b98f6e061df7';
 @ProviderFor(permissionService)
 final permissionServiceProvider =
     AutoDisposeProvider<PermissionService>.internal(
-  permissionService,
-  name: r'permissionServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$permissionServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      permissionService,
+      name: r'permissionServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$permissionServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef PermissionServiceRef = AutoDisposeProviderRef<PermissionService>;
 // ignore_for_file: type=lint

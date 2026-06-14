@@ -68,16 +68,19 @@ void main() {
   });
 
   group('Isar Provider Tests', () {
-    test('isarProvider is defined and returns a FutureProvider in loading state initially', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'isarProvider is defined and returns a FutureProvider in loading state initially',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final subscription = container.listen(
-        isarProvider,
-        (previous, next) {},
-      );
+        final subscription = container.listen(
+          isarProvider,
+          (previous, next) {},
+        );
 
-      expect(subscription.read(), const AsyncValue<Isar>.loading());
-    });
+        expect(subscription.read(), const AsyncValue<Isar>.loading());
+      },
+    );
   });
 }

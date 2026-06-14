@@ -13,15 +13,15 @@ sealed class Result<S, F> {
 
   /// Returns the success value, or null if this is a failure.
   S? get successOrNullValue => switch (this) {
-        Success(value: final v) => v,
-        Failure() => null,
-      };
+    Success(value: final v) => v,
+    Failure() => null,
+  };
 
   /// Returns the failure value, or null if this is a success.
   F? get failureOrNullValue => switch (this) {
-        Success() => null,
-        Failure(error: final e) => e,
-      };
+    Success() => null,
+    Failure(error: final e) => e,
+  };
 
   /// Transforms the success value using [fn] if this is a [Success].
   Result<T, F> map<T>(T Function(S value) fn) {
@@ -40,10 +40,7 @@ sealed class Result<S, F> {
   }
 
   /// Executes [onSuccess] or [onFailure] depending on the type of result.
-  R fold<R>(
-    R Function(S value) onSuccess,
-    R Function(F error) onFailure,
-  ) {
+  R fold<R>(R Function(S value) onSuccess, R Function(F error) onFailure) {
     return switch (this) {
       Success(value: final v) => onSuccess(v),
       Failure(error: final e) => onFailure(e),
@@ -58,7 +55,8 @@ class Success<S, F> extends Result<S, F> {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || (other is Success<S, F> && other.value == value);
+      identical(this, other) ||
+      (other is Success<S, F> && other.value == value);
 
   @override
   int get hashCode => value.hashCode;
@@ -74,7 +72,8 @@ class Failure<S, F> extends Result<S, F> {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || (other is Failure<S, F> && other.error == error);
+      identical(this, other) ||
+      (other is Failure<S, F> && other.error == error);
 
   @override
   int get hashCode => error.hashCode;

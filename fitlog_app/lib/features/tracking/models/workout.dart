@@ -13,10 +13,10 @@ class Workout {
   late String sportType; // e.g., 'running', 'cycling', 'walking', 'hiking'
   late DateTime startTime;
   DateTime? endTime;
-  
+
   double durationSeconds = 0.0;
   double distanceMeters = 0.0;
-  
+
   double? averageSpeed;
   double? maxSpeed;
   double? elevationGain;
@@ -24,7 +24,7 @@ class Workout {
   double? averageHeartRate;
   double? maxHeartRate;
   double? calories;
-  
+
   bool isCompleted = false;
 
   /// Breadcrumb path for the workout.

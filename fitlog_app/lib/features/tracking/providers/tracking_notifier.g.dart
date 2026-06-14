@@ -15,14 +15,14 @@ String _$trackingNotifierHash() => r'e0a34caed74d03ef4a9303837be1791b93b47654';
 @ProviderFor(TrackingNotifier)
 final trackingNotifierProvider =
     AutoDisposeNotifierProvider<TrackingNotifier, TrackingState>.internal(
-  TrackingNotifier.new,
-  name: r'trackingNotifierProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$trackingNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      TrackingNotifier.new,
+      name: r'trackingNotifierProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$trackingNotifierHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$TrackingNotifier = AutoDisposeNotifier<TrackingState>;
 // ignore_for_file: type=lint

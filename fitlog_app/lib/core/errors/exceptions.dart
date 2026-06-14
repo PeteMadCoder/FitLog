@@ -7,7 +7,8 @@ abstract class AppException implements Exception {
   const AppException(this.message, [this.error, this.stackTrace]);
 
   @override
-  String toString() => '$runtimeType: $message${error != null ? " ($error)" : ""}';
+  String toString() =>
+      '$runtimeType: $message${error != null ? " ($error)" : ""}';
 }
 
 /// Thrown when an error occurs during database operations (Isar).

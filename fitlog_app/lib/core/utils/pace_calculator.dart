@@ -9,7 +9,10 @@ class PaceCalculator {
 
   /// Calculates average pace from duration and distance in meters.
   /// Returns null if distance is zero or invalid.
-  static double? calculateAveragePaceMinPerKm(Duration duration, double distanceMeters) {
+  static double? calculateAveragePaceMinPerKm(
+    Duration duration,
+    double distanceMeters,
+  ) {
     if (distanceMeters <= 1.0) return null;
     final distanceKm = distanceMeters / 1000.0;
     final minutes = duration.inSeconds / 60.0;
@@ -19,7 +22,10 @@ class PaceCalculator {
   /// Formats pace in minutes per kilometer to a standard "MM:SS" representation.
   /// Returns "--:--" if pace is invalid or null.
   static String formatPace(double? paceMinPerKm) {
-    if (paceMinPerKm == null || paceMinPerKm.isInfinite || paceMinPerKm.isNaN || paceMinPerKm < 0) {
+    if (paceMinPerKm == null ||
+        paceMinPerKm.isInfinite ||
+        paceMinPerKm.isNaN ||
+        paceMinPerKm < 0) {
       return '--:--';
     }
     final minutes = paceMinPerKm.floor();

@@ -54,13 +54,13 @@ void main() {
           permissionServiceProvider.overrideWithValue(fakePermission),
           gpsServiceProvider.overrideWithValue(fakeGps),
         ],
-        child: const MaterialApp(
-          home: TrackerScreen(),
-        ),
+        child: const MaterialApp(home: TrackerScreen()),
       );
     }
 
-    testWidgets('TrackerScreen renders sport selection in idle state', (WidgetTester tester) async {
+    testWidgets('TrackerScreen renders sport selection in idle state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -70,39 +70,45 @@ void main() {
       expect(find.text('Ride'), findsOneWidget);
     });
 
-    testWidgets('Tapping start transitions TrackerScreen to ActiveWorkoutScreen', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Tapping start transitions TrackerScreen to ActiveWorkoutScreen',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Tap START WORKOUT to start recording
-      await tester.tap(find.text('START WORKOUT'));
-      await tester.pumpAndSettle();
+        // Tap START WORKOUT to start recording
+        await tester.tap(find.text('START WORKOUT'));
+        await tester.pumpAndSettle();
 
-      // Verify that it transitions to ActiveWorkoutScreen
-      expect(find.byType(ActiveWorkoutScreen), findsOneWidget);
-      expect(find.text('TIME'), findsOneWidget);
-      expect(find.text('DISTANCE'), findsOneWidget);
-      expect(find.text('SPEED'), findsOneWidget);
-      
-      // Verify that the Pause button is present (since we are recording)
-      expect(find.byIcon(Icons.pause), findsOneWidget);
-    });
+        // Verify that it transitions to ActiveWorkoutScreen
+        expect(find.byType(ActiveWorkoutScreen), findsOneWidget);
+        expect(find.text('TIME'), findsOneWidget);
+        expect(find.text('DISTANCE'), findsOneWidget);
+        expect(find.text('SPEED'), findsOneWidget);
 
-    testWidgets('Tapping pause in ActiveWorkoutScreen changes controls to Stop and Play', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        // Verify that the Pause button is present (since we are recording)
+        expect(find.byIcon(Icons.pause), findsOneWidget);
+      },
+    );
 
-      // Start workout
-      await tester.tap(find.text('START WORKOUT'));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Tapping pause in ActiveWorkoutScreen changes controls to Stop and Play',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Tap Pause button
-      await tester.tap(find.byIcon(Icons.pause));
-      await tester.pumpAndSettle();
+        // Start workout
+        await tester.tap(find.text('START WORKOUT'));
+        await tester.pumpAndSettle();
 
-      // Verify state changes to Paused and shows Play (resume) and Stop buttons
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-      expect(find.byIcon(Icons.stop), findsOneWidget);
-    });
+        // Tap Pause button
+        await tester.tap(find.byIcon(Icons.pause));
+        await tester.pumpAndSettle();
+
+        // Verify state changes to Paused and shows Play (resume) and Stop buttons
+        expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+        expect(find.byIcon(Icons.stop), findsOneWidget);
+      },
+    );
   });
 }

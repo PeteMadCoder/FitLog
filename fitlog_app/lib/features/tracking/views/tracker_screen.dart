@@ -85,7 +85,8 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            result.failureOrNullValue?.message ?? 'Failed to start tracking',
+                            result.failureOrNullValue?.message ??
+                                'Failed to start tracking',
                           ),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
@@ -102,7 +103,11 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                   ),
                   child: const Text(
                     'START WORKOUT',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
                   ),
                 ),
               ),
@@ -137,7 +142,9 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? theme.colorScheme.primary : Colors.grey.withOpacity(0.3),
+            color: isSelected
+                ? theme.colorScheme.primary
+                : Colors.grey.withOpacity(0.3),
             width: 2,
           ),
         ),

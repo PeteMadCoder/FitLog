@@ -41,7 +41,7 @@
 
 ## Phase 3: Persistence & Analysis
 
-- [ ] **3.1. Save Workout Logic**
+- [x] **3.1. Save Workout Logic**
     - Implement the "Stop & Save" flow.
     - Persist the `Workout` and its related `GpsPoint` list to Isar.
 - [ ] **3.2. Post-Workout Summary Screen**

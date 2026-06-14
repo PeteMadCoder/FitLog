@@ -19,20 +19,21 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-        if (methodCall.method == 'checkPermissionStatus') {
-          return mockStatusIndex;
-        } else if (methodCall.method == 'requestPermissions') {
-          final List<dynamic> permissions = methodCall.arguments;
-          final Map<int, int> results = {};
-          for (final permission in permissions) {
-            results[permission as int] = mockRequestResults[permission] ?? mockStatusIndex;
-          }
-          return results;
-        } else if (methodCall.method == 'openAppSettings') {
-          return true;
-        }
-        return null;
-      });
+            if (methodCall.method == 'checkPermissionStatus') {
+              return mockStatusIndex;
+            } else if (methodCall.method == 'requestPermissions') {
+              final List<dynamic> permissions = methodCall.arguments;
+              final Map<int, int> results = {};
+              for (final permission in permissions) {
+                results[permission as int] =
+                    mockRequestResults[permission] ?? mockStatusIndex;
+              }
+              return results;
+            } else if (methodCall.method == 'openAppSettings') {
+              return true;
+            }
+            return null;
+          });
 
       permissionService = const PermissionService();
     });
@@ -66,17 +67,25 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('requestBackgroundLocationPermission returns true if granted', () async {
-      mockStatusIndex = 1; // granted
-      final result = await permissionService.requestBackgroundLocationPermission();
-      expect(result, isTrue);
-    });
+    test(
+      'requestBackgroundLocationPermission returns true if granted',
+      () async {
+        mockStatusIndex = 1; // granted
+        final result = await permissionService
+            .requestBackgroundLocationPermission();
+        expect(result, isTrue);
+      },
+    );
 
-    test('requestBackgroundLocationPermission returns false if foreground is denied', () async {
-      mockStatusIndex = 0; // denied
-      final result = await permissionService.requestBackgroundLocationPermission();
-      expect(result, isFalse);
-    });
+    test(
+      'requestBackgroundLocationPermission returns false if foreground is denied',
+      () async {
+        mockStatusIndex = 0; // denied
+        final result = await permissionService
+            .requestBackgroundLocationPermission();
+        expect(result, isFalse);
+      },
+    );
 
     test('hasBluetoothPermission returns status', () async {
       mockStatusIndex = 1; // granted
@@ -98,7 +107,10 @@ void main() {
     test('permissionServiceProvider supplies the service', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      expect(container.read(permissionServiceProvider), isA<PermissionService>());
+      expect(
+        container.read(permissionServiceProvider),
+        isA<PermissionService>(),
+      );
     });
   });
 }

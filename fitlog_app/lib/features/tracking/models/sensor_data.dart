@@ -2,7 +2,7 @@ import 'package:isar/isar.dart';
 
 part 'sensor_data.g.dart';
 
-/// Represents external BLE sensor data (e.g., heart rate, cadence) 
+/// Represents external BLE sensor data (e.g., heart rate, cadence)
 /// recorded concurrently with the GPS path.
 @collection
 class SensorData {

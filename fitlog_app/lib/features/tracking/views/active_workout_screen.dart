@@ -12,7 +12,8 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
 
   @override
-  ConsumerState<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
+  ConsumerState<ActiveWorkoutScreen> createState() =>
+      _ActiveWorkoutScreenState();
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
@@ -35,7 +36,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget build(BuildContext context) {
     final trackingState = ref.watch(trackingNotifierProvider);
     final gpsPoints = trackingState.gpsPoints;
-    
+
     // Map list of GpsPoints into LatLng coordinates
     final List<LatLng> routePoints = gpsPoints
         .map((p) => LatLng(p.latitude, p.longitude))
@@ -123,9 +124,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: const [
                       BoxShadow(color: Colors.black12, blurRadius: 6),
@@ -152,14 +158,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'Online Map Tiles',
-                    style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -192,7 +205,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
                 boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
@@ -206,7 +221,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 children: [
                   const WorkoutMetricsGrid(),
                   const SizedBox(height: 24),
-                  
+
                   // Tracking action buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -214,7 +229,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       if (trackingState.status == TrackingStatus.recording) ...[
                         ElevatedButton(
                           onPressed: () {
-                            ref.read(trackingNotifierProvider.notifier).pauseTracking();
+                            ref
+                                .read(trackingNotifierProvider.notifier)
+                                .pauseTracking();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
@@ -225,7 +242,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                           ),
                           child: const Icon(Icons.pause, size: 28),
                         ),
-                      ] else if (trackingState.status == TrackingStatus.paused) ...[
+                      ] else if (trackingState.status ==
+                          TrackingStatus.paused) ...[
                         ElevatedButton(
                           onPressed: () => _showStopConfirmationSheet(context),
                           style: ElevatedButton.styleFrom(
@@ -240,11 +258,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                         const SizedBox(width: 32),
                         ElevatedButton(
                           onPressed: () {
-                            ref.read(trackingNotifierProvider.notifier).resumeTracking();
+                            ref
+                                .read(trackingNotifierProvider.notifier)
+                                .resumeTracking();
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                             shape: const CircleBorder(),
                             padding: const EdgeInsets.all(20),
                             elevation: 4,
@@ -292,7 +316,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          ref.read(trackingNotifierProvider.notifier).discardTracking();
+                          ref
+                              .read(trackingNotifierProvider.notifier)
+                              .discardTracking();
                           Navigator.pop(ctx);
                         },
                         style: OutlinedButton.styleFrom(
@@ -309,20 +335,42 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          final savedState = ref.read(trackingNotifierProvider.notifier).stopTracking();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Workout completed! Saved ${savedState.gpsPoints.length} points.',
-                              ),
-                            ),
-                          );
-                          Navigator.pop(ctx);
+                        onPressed: () async {
+                          final result = await ref
+                              .read(trackingNotifierProvider.notifier)
+                              .stopTracking();
+                          if (context.mounted) {
+                            result.fold(
+                              (workout) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Workout completed! Saved ${workout.gpsPoints.length} points.',
+                                    ),
+                                  ),
+                                );
+                              },
+                              (failure) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(failure.message),
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.error,
+                                  ),
+                                );
+                              },
+                            );
+                            Navigator.pop(ctx);
+                          }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

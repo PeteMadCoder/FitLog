@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/app/main_navigation_shell.dart';
 
 void main() {
-  testWidgets('Navigation Shell switches tabs on tap', (WidgetTester tester) async {
+  testWidgets('Navigation Shell switches tabs on tap', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: MainNavigationShell(),
-        ),
-      ),
+      const ProviderScope(child: MaterialApp(home: MainNavigationShell())),
     );
 
     // Verify initial screen is the Home Dashboard.

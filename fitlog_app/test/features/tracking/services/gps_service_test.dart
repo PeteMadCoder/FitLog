@@ -11,10 +11,10 @@ class FakeLocation implements Location {
   LocationAccuracy? lastAccuracy;
   int? lastInterval;
   double? lastDistanceFilter;
-  
+
   String? lastNotificationTitle;
   String? lastNotificationSubtitle;
-  
+
   final _controller = StreamController<LocationData>.broadcast();
 
   void emitLocation(LocationData data) {
@@ -29,16 +29,19 @@ class FakeLocation implements Location {
     if (invocation.memberName == #changeSettings) {
       lastAccuracy = invocation.namedArguments[#accuracy] as LocationAccuracy?;
       lastInterval = invocation.namedArguments[#interval] as int?;
-      lastDistanceFilter = invocation.namedArguments[#distanceFilter] as double?;
+      lastDistanceFilter =
+          invocation.namedArguments[#distanceFilter] as double?;
       return Future.value(true);
     }
     if (invocation.memberName == #enableBackgroundMode) {
-      backgroundModeEnabled = invocation.namedArguments[#enable] as bool? ?? true;
+      backgroundModeEnabled =
+          invocation.namedArguments[#enable] as bool? ?? true;
       return Future.value(true);
     }
     if (invocation.memberName == #changeNotificationOptions) {
       lastNotificationTitle = invocation.namedArguments[#title] as String?;
-      lastNotificationSubtitle = invocation.namedArguments[#subtitle] as String?;
+      lastNotificationSubtitle =
+          invocation.namedArguments[#subtitle] as String?;
       return Future.value(null);
     }
     return null;
@@ -55,20 +58,26 @@ void main() {
       gpsService = GpsService(location: fakeLocation);
     });
 
-    test('configureGpsSettings configures high accuracy location settings', () async {
-      await gpsService.configureGpsSettings();
+    test(
+      'configureGpsSettings configures high accuracy location settings',
+      () async {
+        await gpsService.configureGpsSettings();
 
-      expect(fakeLocation.lastAccuracy, equals(LocationAccuracy.high));
-      expect(fakeLocation.lastInterval, equals(1000));
-      expect(fakeLocation.lastDistanceFilter, equals(0.0));
-    });
+        expect(fakeLocation.lastAccuracy, equals(LocationAccuracy.high));
+        expect(fakeLocation.lastInterval, equals(1000));
+        expect(fakeLocation.lastDistanceFilter, equals(0.0));
+      },
+    );
 
     test('enableBackgroundMode calls configuration and enables mode', () async {
       final result = await gpsService.enableBackgroundMode();
 
       expect(result, isTrue);
       expect(fakeLocation.backgroundModeEnabled, isTrue);
-      expect(fakeLocation.lastNotificationTitle, equals('FitLog Active Activity'));
+      expect(
+        fakeLocation.lastNotificationTitle,
+        equals('FitLog Active Activity'),
+      );
       expect(fakeLocation.lastNotificationSubtitle, contains('background'));
     });
 
@@ -96,13 +105,23 @@ void main() {
 
       expect(
         gpsStream,
-        emits(isA<GpsPoint>()
-            .having((p) => p.latitude, 'latitude', equals(37.7749))
-            .having((p) => p.longitude, 'longitude', equals(-122.4194))
-            .having((p) => p.accuracy, 'accuracy', equals(4.5))
-            .having((p) => p.altitude, 'altitude', equals(120.0))
-            .having((p) => p.speed, 'speed', equals(5.5))
-            .having((p) => p.timestamp, 'timestamp', equals(DateTime.fromMillisecondsSinceEpoch(dateNow.millisecondsSinceEpoch)))),
+        emits(
+          isA<GpsPoint>()
+              .having((p) => p.latitude, 'latitude', equals(37.7749))
+              .having((p) => p.longitude, 'longitude', equals(-122.4194))
+              .having((p) => p.accuracy, 'accuracy', equals(4.5))
+              .having((p) => p.altitude, 'altitude', equals(120.0))
+              .having((p) => p.speed, 'speed', equals(5.5))
+              .having(
+                (p) => p.timestamp,
+                'timestamp',
+                equals(
+                  DateTime.fromMillisecondsSinceEpoch(
+                    dateNow.millisecondsSinceEpoch,
+                  ),
+                ),
+              ),
+        ),
       );
 
       fakeLocation.emitLocation(locationData);

@@ -26,7 +26,7 @@ class PermissionService {
   }
 
   /// Request background/always location permissions.
-  /// 
+  ///
   /// Note: On Android, the foreground location permission must be granted
   /// first before attempting to request "always" location permission.
   Future<bool> requestBackgroundLocationPermission() async {
@@ -59,11 +59,11 @@ class PermissionService {
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
       ].request();
-      
+
       return statuses[Permission.bluetoothScan]?.isGranted == true &&
           statuses[Permission.bluetoothConnect]?.isGranted == true;
     }
-    
+
     final status = await Permission.bluetooth.request();
     return status.isGranted;
   }

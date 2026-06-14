@@ -4,11 +4,7 @@ import 'package:fitlog_app/app/app_theme.dart';
 import 'package:fitlog_app/app/main_navigation_shell.dart';
 
 void main() {
-  runApp(
-    const ProviderScope(
-      child: FitLogApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: FitLogApp()));
 }
 
 class FitLogApp extends StatelessWidget {

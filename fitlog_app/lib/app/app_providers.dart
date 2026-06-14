@@ -11,14 +11,11 @@ part 'app_providers.g.dart';
 @riverpod
 Future<Isar> isar(IsarRef ref) async {
   final dir = await getApplicationDocumentsDirectory();
-  return Isar.open(
-    [
-      WorkoutSchema,
-      GpsPointSchema,
-      SensorDataSchema,
-    ],
-    directory: dir.path,
-  );
+  return Isar.open([
+    WorkoutSchema,
+    GpsPointSchema,
+    SensorDataSchema,
+  ], directory: dir.path);
 }
 
 /// Provider to manage the active index of the bottom navigation shell.

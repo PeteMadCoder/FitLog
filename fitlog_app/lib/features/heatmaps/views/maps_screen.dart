@@ -9,10 +9,7 @@ class MapsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Maps')),
       body: const Center(
-        child: Text(
-          'Maps and Routes Screen',
-          style: TextStyle(fontSize: 18),
-        ),
+        child: Text('Maps and Routes Screen', style: TextStyle(fontSize: 18)),
       ),
     );
   }

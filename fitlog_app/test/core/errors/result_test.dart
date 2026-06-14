@@ -24,19 +24,13 @@ void main() {
 
     test('fold correctly evaluates Success', () {
       const Result<int, String> result = Success(42);
-      final value = result.fold(
-        (val) => val * 2,
-        (err) => 0,
-      );
+      final value = result.fold((val) => val * 2, (err) => 0);
       expect(value, equals(84));
     });
 
     test('fold correctly evaluates Failure', () {
       const Result<int, String> result = Failure('Error');
-      final value = result.fold(
-        (val) => val * 2,
-        (err) => 999,
-      );
+      final value = result.fold((val) => val * 2, (err) => 999);
       expect(value, equals(999));
     });
 
@@ -57,7 +51,10 @@ void main() {
 
       const Result<int, String> failure = Failure('Failed');
       final mappedFailure = failure.mapFailure((e) => '$e modified');
-      expect(mappedFailure, equals(const Failure<int, String>('Failed modified')));
+      expect(
+        mappedFailure,
+        equals(const Failure<int, String>('Failed modified')),
+      );
     });
 
     test('equality and toString override work correctly', () {
@@ -86,23 +83,41 @@ void main() {
       final dbException = DatabaseException('DB Failed', 'Unique constraint');
       expect(dbException.message, equals('DB Failed'));
       expect(dbException.error, equals('Unique constraint'));
-      expect(dbException.toString(), contains('DatabaseException: DB Failed (Unique constraint)'));
+      expect(
+        dbException.toString(),
+        contains('DatabaseException: DB Failed (Unique constraint)'),
+      );
 
       final locationException = LocationException('GPS Lost');
       expect(locationException.message, equals('GPS Lost'));
-      expect(locationException.toString(), equals('LocationException: GPS Lost'));
+      expect(
+        locationException.toString(),
+        equals('LocationException: GPS Lost'),
+      );
 
       final sensorException = SensorException('BLE disconnected');
-      expect(sensorException.toString(), equals('SensorException: BLE disconnected'));
+      expect(
+        sensorException.toString(),
+        equals('SensorException: BLE disconnected'),
+      );
 
       final permissionException = PermissionException('Permission denied');
-      expect(permissionException.toString(), equals('PermissionException: Permission denied'));
+      expect(
+        permissionException.toString(),
+        equals('PermissionException: Permission denied'),
+      );
 
       final backupException = BackupException('GPX Parse Error');
-      expect(backupException.toString(), equals('BackupException: GPX Parse Error'));
+      expect(
+        backupException.toString(),
+        equals('BackupException: GPX Parse Error'),
+      );
 
       final unknownException = UnknownException('Something failed');
-      expect(unknownException.toString(), equals('UnknownException: Something failed'));
+      expect(
+        unknownException.toString(),
+        equals('UnknownException: Something failed'),
+      );
     });
   });
 }

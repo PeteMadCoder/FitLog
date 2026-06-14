@@ -32,7 +32,7 @@ class GpsService {
         iconName: 'mipmap/ic_launcher',
         onTapBringToFront: true,
       );
-      
+
       return await _location.enableBackgroundMode(enable: true);
     } catch (e) {
       // Return false if platform-specific errors prevent enabling background mode

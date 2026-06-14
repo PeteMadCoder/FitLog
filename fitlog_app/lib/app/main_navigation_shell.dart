@@ -25,13 +25,11 @@ class MainNavigationShell extends ConsumerWidget {
     final selectedIndex = ref.watch(navigationIndexProvider);
 
     return Scaffold(
-      body: IndexedStack(
-        index: selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: selectedIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,
-        onTap: (index) => ref.read(navigationIndexProvider.notifier).setIndex(index),
+        onTap: (index) =>
+            ref.read(navigationIndexProvider.notifier).setIndex(index),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
