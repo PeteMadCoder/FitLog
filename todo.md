@@ -21,9 +21,9 @@
 
 ## Phase 2: The Tracking Engine (Core Feature)
 
-- [ ] **2.1. Permission Service**
+- [x] **2.1. Permission Service**
     - Implement `PermissionService` in `lib/core/permissions/` to handle Location (Background/Always) and Bluetooth permissions.
-- [ ] **2.2. GPS Service**
+- [x] **2.2. GPS Service**
     - Implement a service using the `location` package to stream `GpsPoint` data.
     - Ensure it handles background execution properly.
 - [ ] **2.3. Live Tracking Notifier (Riverpod)**
