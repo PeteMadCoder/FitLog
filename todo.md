@@ -3,7 +3,7 @@
 
 ## Phase 1: Foundation & Infrastructure
 
-- [ ] **1.1. Project Initialization & Cleanup**
+- [x] **1.1. Project Initialization & Cleanup**
     - Remove Flutter boilerplate (counter app).
     - Configure `pubspec.yaml` with all fixed dependencies (Riverpod, Isar, flutter_map, etc.).
     - Create the directory structure as defined in `GEMINI.md` (app, core, data, features, shared).
