@@ -5,10 +5,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/widgets/metric_card.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
+import 'package:fitlog_app/features/analytics/services/split_calculator.dart';
 
 /// A premium screen presenting the post-workout analysis,
 /// including a static route map, summary metrics, and interactive charts.
@@ -251,6 +253,17 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
           ),
           const SizedBox(height: 16),
           _buildChartsSection(context, gpsPoints),
+          const SizedBox(height: 32),
+          const Text(
+            'LAP SPLITS (1KM)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildLapsTable(context, gpsPoints),
         ],
       ),
     );
@@ -641,6 +654,191 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return r * c;
+  }
+
+  Widget _buildLapsTable(BuildContext context, List<dynamic> gpsPointsList) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final gpsPoints = List<GpsPoint>.from(gpsPointsList);
+    final splits = SplitCalculator.calculateSplits(gpsPoints);
+
+    if (splits.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24.0),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.format_list_numbered,
+              size: 40,
+              color: colorScheme.onSurface.withOpacity(0.4),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No splits recorded',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'LAP',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withOpacity(0.55),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'DISTANCE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withOpacity(0.55),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'TIME',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withOpacity(0.55),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'AVG PACE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withOpacity(0.55),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: splits.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final split = splits[index];
+                final distKm = split.distanceMeters / 1000.0;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 12.0,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${split.index}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          '${distKm.toStringAsFixed(2)} km',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          split.duration.toHoursMinutesSeconds(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          '${PaceCalculator.formatPace(split.averagePaceMinPerKm)}/km',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime dt) {

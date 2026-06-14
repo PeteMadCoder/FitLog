@@ -174,6 +174,13 @@ void main() {
 
         // Verify that the LineChart is rendered
         expect(find.byType(LineChart), findsOneWidget);
+
+        // Verify laps table is rendered
+        expect(find.text('LAP SPLITS (1KM)'), findsOneWidget);
+        expect(find.text('LAP'), findsOneWidget);
+        expect(find.text('DISTANCE'), findsNWidgets(2));
+        expect(find.text('TIME'), findsOneWidget);
+        expect(find.text('AVG PACE'), findsNWidgets(2));
       },
     );
   });

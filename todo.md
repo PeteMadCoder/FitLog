@@ -50,7 +50,7 @@
 - [x] **3.3. Basic Charts**
     - Use `fl_chart` to show an Elevation vs. Distance graph.
     - Show a Speed/Pace over time graph.
-- [ ] **3.4. Lap/Split Logic**
+- [x] **3.4. Lap/Split Logic**
     - Implement service to automatically calculate 1km splits from a list of GpsPoints.
     - Display a "Laps" table in the detail screen.
 
