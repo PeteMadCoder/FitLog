@@ -26,7 +26,7 @@
 - [x] **2.2. GPS Service**
     - Implement a service using the `location` package to stream `GpsPoint` data.
     - Ensure it handles background execution properly.
-- [ ] **2.3. Live Tracking Notifier (Riverpod)**
+- [x] **2.3. Live Tracking Notifier (Riverpod)**
     - Create `TrackingNotifier` using `@riverpod`.
     - Logic for: Start, Pause, Resume, Stop.
     - Accumulate `GpsPoint` objects in state during recording.
