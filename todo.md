@@ -30,7 +30,7 @@
     - Create `TrackingNotifier` using `@riverpod`.
     - Logic for: Start, Pause, Resume, Stop.
     - Accumulate `GpsPoint` objects in state during recording.
-- [ ] **2.4. Live Map View**
+- [x] **2.4. Live Map View**
     - Implement `ActiveWorkoutScreen` in `features/tracking/views/`.
     - Use `flutter_map` to show the user's current position and the breadcrumb trail (polyline).
 - [ ] **2.5. Real-time Metrics Display**

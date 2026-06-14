@@ -19,7 +19,7 @@ void main() {
     // Tap Tracker icon to navigate to Tracker tab.
     await tester.tap(find.byIcon(Icons.play_circle_outline));
     await tester.pumpAndSettle();
-    expect(find.text('Workout Tracking Screen'), findsOneWidget);
+    expect(find.text('Start Workout'), findsOneWidget);
 
     // Tap Maps icon to navigate to Maps tab.
     await tester.tap(find.byIcon(Icons.map_outlined));
