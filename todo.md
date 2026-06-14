@@ -44,7 +44,7 @@
 - [x] **3.1. Save Workout Logic**
     - Implement the "Stop & Save" flow.
     - Persist the `Workout` and its related `GpsPoint` list to Isar.
-- [ ] **3.2. Post-Workout Summary Screen**
+- [x] **3.2. Post-Workout Summary Screen**
     - Create `WorkoutDetailScreen` in `features/analytics/views/`.
     - Display a static map of the route and a grid of summary metrics (Total distance, Avg speed, Elevation gain).
 - [ ] **3.3. Basic Charts**

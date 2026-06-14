@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/tracking/views/tracker_screen.dart';
 import 'package:fitlog_app/features/tracking/views/active_workout_screen.dart';
-import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
-import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
 import 'package:fitlog_app/features/tracking/services/gps_service.dart';
 import 'package:fitlog_app/core/permissions/permission_service.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';

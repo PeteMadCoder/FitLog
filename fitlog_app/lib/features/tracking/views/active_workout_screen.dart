@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
 import 'package:fitlog_app/features/tracking/widgets/workout_metrics_widgets.dart';
+import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
 
 /// Screen displayed during an active workout session.
 /// Renders a live map, routes breadcrumbs, real-time metrics, and pause/resume/stop controls.
@@ -340,12 +341,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                               .read(trackingNotifierProvider.notifier)
                               .stopTracking();
                           if (context.mounted) {
+                            Navigator.pop(ctx);
                             result.fold(
                               (workout) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       'Workout completed! Saved ${workout.gpsPoints.length} points.',
+                                    ),
+                                  ),
+                                );
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => WorkoutDetailScreen(
+                                      workoutId: workout.id,
                                     ),
                                   ),
                                 );
@@ -361,7 +371,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                                 );
                               },
                             );
-                            Navigator.pop(ctx);
                           }
                         },
                         style: ElevatedButton.styleFrom(
