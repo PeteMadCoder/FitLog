@@ -10,10 +10,10 @@
 - [x] **1.2. Core Result Type & Error Handling**
     - Implement a `Result<T, E>` or `Either` type in `lib/core/errors/` to handle failures without exceptions.
     - Create basic `AppException` classes.
-- [ ] **1.3. Isar Database Setup**
+- [x] **1.3. Isar Database Setup**
     - Define initial Isar schemas in `lib/features/tracking/models/` (`Workout`, `GpsPoint`, `SensorData`).
     - Create an `IsarProvider` in `lib/app/app_providers.dart` that initializes the database singleton.
-- [ ] **1.4. App Theme & Navigation Shell**
+- [x] **1.4. App Theme & Navigation Shell**
     - Define `AppTheme` (Light/Dark) in `lib/app/app_theme.dart`.
     - Implement the `MainNavigationShell` with a `BottomNavigationBar` linking the 5 core modules (Home, Tracker, Maps, Diary, Stats).
 
