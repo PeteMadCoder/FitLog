@@ -47,7 +47,7 @@
 - [x] **3.2. Post-Workout Summary Screen**
     - Create `WorkoutDetailScreen` in `features/analytics/views/`.
     - Display a static map of the route and a grid of summary metrics (Total distance, Avg speed, Elevation gain).
-- [ ] **3.3. Basic Charts**
+- [x] **3.3. Basic Charts**
     - Use `fl_chart` to show an Elevation vs. Distance graph.
     - Show a Speed/Pace over time graph.
 - [ ] **3.4. Lap/Split Logic**

@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:isar/isar.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/tracking/models/gps_point.dart';
+
+class TestWorkout extends Workout {
+  final List<GpsPoint> _pts;
+  TestWorkout(this._pts);
+
+  @override
+  IsarLinks<GpsPoint> get gpsPoints => FakeIsarLinks<GpsPoint>(_pts);
+}
+
+// ignore: subtype_of_sealed_class
+class FakeIsarLinks<T> extends Fake implements IsarLinks<T> {
+  final List<T> _items;
+  FakeIsarLinks(this._items);
+
+  @override
+  List<T> toList({bool growable = true}) => _items;
+
+  @override
+  int get length => _items.length;
+
+  @override
+  bool get isEmpty => _items.isEmpty;
+
+  @override
+  bool get isNotEmpty => _items.isNotEmpty;
+
+  @override
+  Iterator<T> get iterator => _items.iterator;
+}
 
 void main() {
   group('WorkoutDetailScreen Widget Tests', () {
@@ -88,6 +120,61 @@ void main() {
 
       // Verify map fallback (since gpsPoints is empty)
       expect(find.text('No GPS route recorded'), findsOneWidget);
+
+      // Verify chart fallback
+      expect(
+        find.text('Not enough telemetry data to draw charts'),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'renders segmented control and chart when gpsPoints are present',
+      (WidgetTester tester) async {
+        final point1 = GpsPoint()
+          ..latitude = 37.7749
+          ..longitude = -122.4194
+          ..altitude = 100.0
+          ..speed = 3.0
+          ..timestamp = DateTime(2026, 6, 14, 10, 0);
+
+        final point2 = GpsPoint()
+          ..latitude = 37.7750
+          ..longitude = -122.4194
+          ..altitude = 105.0
+          ..speed = 4.0
+          ..timestamp = DateTime(2026, 6, 14, 10, 5);
+
+        final workout = TestWorkout([point1, point2])
+          ..sportType = 'running'
+          ..startTime = DateTime(2026, 6, 14, 10, 0)
+          ..durationSeconds = 1200
+          ..distanceMeters = 3000
+          ..averageSpeed = 2.5
+          ..maxSpeed = 4.0
+          ..elevationGain = 50.0;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              workoutDetailProvider(
+                1,
+              ).overrideWith((ref) => Stream.value(workout)),
+            ],
+            child: const MaterialApp(home: WorkoutDetailScreen(workoutId: 1)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify segmented control is present
+        expect(find.byType(SegmentedButton<int>), findsOneWidget);
+        expect(find.text('Elevation'), findsOneWidget);
+        expect(find.text('Speed'), findsOneWidget);
+        expect(find.text('Pace'), findsOneWidget);
+
+        // Verify that the LineChart is rendered
+        expect(find.byType(LineChart), findsOneWidget);
+      },
+    );
   });
 }

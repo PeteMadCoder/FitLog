@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/tracking/widgets/metric_card.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
@@ -9,15 +11,23 @@ import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
 
 /// A premium screen presenting the post-workout analysis,
-/// including a static route map and a grid of summary metrics.
-class WorkoutDetailScreen extends ConsumerWidget {
+/// including a static route map, summary metrics, and interactive charts.
+class WorkoutDetailScreen extends ConsumerStatefulWidget {
   final int workoutId;
 
   const WorkoutDetailScreen({super.key, required this.workoutId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final workoutAsync = ref.watch(workoutDetailProvider(workoutId));
+  ConsumerState<WorkoutDetailScreen> createState() =>
+      _WorkoutDetailScreenState();
+}
+
+class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
+  int _selectedChartIndex = 0; // 0 for Elevation, 1 for Speed, 2 for Pace
+
+  @override
+  Widget build(BuildContext context) {
+    final workoutAsync = ref.watch(workoutDetailProvider(widget.workoutId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -48,7 +58,9 @@ class WorkoutDetailScreen extends ConsumerWidget {
   Widget _buildContent(BuildContext context, Workout workout) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final gpsPoints = workout.gpsPoints.toList();
+    final gpsPoints = workout.gpsPoints.toList()
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
     final List<LatLng> routePoints = gpsPoints
         .map((p) => LatLng(p.latitude, p.longitude))
         .toList();
@@ -226,6 +238,19 @@ class WorkoutDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           _buildMetricsGrid(workout),
+          const SizedBox(height: 32),
+
+          // 4. Interactive Charts Section
+          const Text(
+            'ACTIVITY ANALYSIS CHARTS',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildChartsSection(context, gpsPoints),
         ],
       ),
     );
@@ -298,6 +323,324 @@ class WorkoutDetailScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildChartsSection(BuildContext context, dynamic gpsPointsList) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Safely cast gpsPointsList
+    final points = List.from(gpsPointsList);
+
+    if (points.length < 2) {
+      return Container(
+        padding: const EdgeInsets.all(24.0),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.show_chart_outlined,
+              size: 40,
+              color: colorScheme.onSurface.withOpacity(0.4),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Not enough telemetry data to draw charts',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Prepare data spots
+    double cumulativeDistance = 0.0;
+    final List<FlSpot> elevationSpots = [];
+    final List<FlSpot> speedSpots = [];
+    final List<FlSpot> paceSpots = [];
+
+    final startTime = points.first.timestamp as DateTime;
+
+    for (int i = 0; i < points.length; i++) {
+      final currentPoint = points[i];
+      if (i > 0) {
+        final prevPoint = points[i - 1];
+        cumulativeDistance += _calculateDistance(
+          prevPoint.latitude,
+          prevPoint.longitude,
+          currentPoint.latitude,
+          currentPoint.longitude,
+        );
+      }
+
+      final altitude = currentPoint.altitude ?? 0.0;
+      final distanceKm = cumulativeDistance / 1000.0;
+      elevationSpots.add(FlSpot(distanceKm, altitude));
+
+      final elapsedMinutes =
+          (currentPoint.timestamp as DateTime).difference(startTime).inSeconds /
+          60.0;
+      final speedKmH = (currentPoint.speed ?? 0.0) * 3.6;
+      speedSpots.add(FlSpot(elapsedMinutes, speedKmH));
+
+      final pace =
+          PaceCalculator.calculatePaceMinPerKm(currentPoint.speed ?? 0.0) ??
+          0.0;
+      paceSpots.add(FlSpot(elapsedMinutes, pace));
+    }
+
+    // Select active chart parameters
+    List<FlSpot> activeSpots;
+    Color barColor;
+    String bottomUnit;
+    String leftUnit;
+    String tooltipLabel;
+
+    switch (_selectedChartIndex) {
+      case 0:
+        activeSpots = elevationSpots;
+        barColor = Colors.brown;
+        bottomUnit = ' km';
+        leftUnit = ' m';
+        tooltipLabel = 'Elevation';
+        break;
+      case 1:
+        activeSpots = speedSpots;
+        barColor = Colors.orange;
+        bottomUnit = ' min';
+        leftUnit = ' km/h';
+        tooltipLabel = 'Speed';
+        break;
+      case 2:
+      default:
+        activeSpots = paceSpots;
+        barColor = Colors.purple;
+        bottomUnit = ' min';
+        leftUnit = ' /km';
+        tooltipLabel = 'Pace';
+        break;
+    }
+
+    if (activeSpots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate dynamic bounds and intervals
+    final minX = activeSpots.map((s) => s.x).reduce(min);
+    final maxX = activeSpots.map((s) => s.x).reduce(max);
+    final rangeX = maxX - minX;
+    final intervalX = rangeX > 0 ? rangeX / 4.0 : 1.0;
+
+    final minY = activeSpots.map((s) => s.y).reduce(min);
+    final maxY = activeSpots.map((s) => s.y).reduce(max);
+    final rangeY = maxY - minY;
+
+    final paddedMinY = rangeY > 0 ? minY - (rangeY * 0.1) : minY - 10;
+    final paddedMaxY = rangeY > 0 ? maxY + (rangeY * 0.1) : maxY + 10;
+    final intervalY = rangeY > 0 ? rangeY / 3.0 : 1.0;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 24, 20),
+        child: Column(
+          children: [
+            // Chart Selection Control
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(
+                  value: 0,
+                  label: Text('Elevation'),
+                  icon: Icon(Icons.terrain_outlined, size: 18),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  label: Text('Speed'),
+                  icon: Icon(Icons.speed_outlined, size: 18),
+                ),
+                ButtonSegment(
+                  value: 2,
+                  label: Text('Pace'),
+                  icon: Icon(Icons.av_timer_outlined, size: 18),
+                ),
+              ],
+              selected: {_selectedChartIndex},
+              onSelectionChanged: (set) {
+                setState(() {
+                  _selectedChartIndex = set.first;
+                });
+              },
+              showSelectedIcon: false,
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            ),
+            const SizedBox(height: 28),
+
+            // Line Chart View
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  minX: minX,
+                  maxX: maxX,
+                  minY: paddedMinY,
+                  maxY: paddedMaxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: colorScheme.outlineVariant.withOpacity(0.2),
+                        strokeWidth: 1.0,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        interval: intervalX,
+                        getTitlesWidget: (value, meta) {
+                          return SideTitleWidget(
+                            meta: meta,
+                            child: Text(
+                              '${value.toStringAsFixed(1)}$bottomUnit',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: colorScheme.onSurface.withOpacity(0.55),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 44,
+                        interval: intervalY,
+                        getTitlesWidget: (value, meta) {
+                          // For pace chart, format clean MM:SS
+                          String valueStr;
+                          if (_selectedChartIndex == 2) {
+                            valueStr = PaceCalculator.formatPace(value);
+                          } else {
+                            valueStr = value.toStringAsFixed(0);
+                          }
+
+                          return SideTitleWidget(
+                            meta: meta,
+                            child: Text(
+                              '$valueStr$leftUnit',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: colorScheme.onSurface.withOpacity(0.55),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (spot) =>
+                          colorScheme.surfaceContainerHighest,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          final xStr = spot.x.toStringAsFixed(2);
+                          String yStr;
+                          if (_selectedChartIndex == 2) {
+                            yStr = PaceCalculator.formatPace(spot.y);
+                          } else {
+                            yStr = spot.y.toStringAsFixed(1);
+                          }
+
+                          return LineTooltipItem(
+                            '$tooltipLabel\n$yStr$leftUnit at $xStr$bottomUnit',
+                            TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: activeSpots,
+                      isCurved: true,
+                      barWidth: 3.0,
+                      color: barColor,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            barColor.withOpacity(0.24),
+                            barColor.withOpacity(0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const r = 6371000.0; // Earth radius in meters
+    final dLat = (lat2 - lat1) * pi / 180.0;
+    final dLon = (lon2 - lon1) * pi / 180.0;
+
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180.0) *
+            cos(lat2 * pi / 180.0) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return r * c;
   }
 
   String _formatDateTime(DateTime dt) {
