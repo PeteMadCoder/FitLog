@@ -7,7 +7,7 @@
     - Remove Flutter boilerplate (counter app).
     - Configure `pubspec.yaml` with all fixed dependencies (Riverpod, Isar, flutter_map, etc.).
     - Create the directory structure as defined in `GEMINI.md` (app, core, data, features, shared).
-- [ ] **1.2. Core Result Type & Error Handling**
+- [x] **1.2. Core Result Type & Error Handling**
     - Implement a `Result<T, E>` or `Either` type in `lib/core/errors/` to handle failures without exceptions.
     - Create basic `AppException` classes.
 - [ ] **1.3. Isar Database Setup**
