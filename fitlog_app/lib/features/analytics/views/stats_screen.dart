@@ -15,10 +15,7 @@ class StatsScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: const Text('Statistics'), centerTitle: false),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -82,11 +79,13 @@ class StatsScreen extends ConsumerWidget {
                   ),
                 ),
                 error: (err, stack) => Center(
-                  child: Text('Error: $err',
-                      style: TextStyle(color: colorScheme.error)),
+                  child: Text(
+                    'Error: $err',
+                    style: TextStyle(color: colorScheme.error),
+                  ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
               _buildInfoSection(context),
             ],
@@ -103,22 +102,10 @@ class StatsScreen extends ConsumerWidget {
   ) {
     return SegmentedButton<StatsTimeframe>(
       segments: const [
-        ButtonSegment(
-          value: StatsTimeframe.weekly,
-          label: Text('Week'),
-        ),
-        ButtonSegment(
-          value: StatsTimeframe.monthly,
-          label: Text('Month'),
-        ),
-        ButtonSegment(
-          value: StatsTimeframe.yearly,
-          label: Text('Year'),
-        ),
-        ButtonSegment(
-          value: StatsTimeframe.allTime,
-          label: Text('All'),
-        ),
+        ButtonSegment(value: StatsTimeframe.weekly, label: Text('Week')),
+        ButtonSegment(value: StatsTimeframe.monthly, label: Text('Month')),
+        ButtonSegment(value: StatsTimeframe.yearly, label: Text('Year')),
+        ButtonSegment(value: StatsTimeframe.allTime, label: Text('All')),
       ],
       selected: {current},
       onSelectionChanged: (newSelection) {
@@ -143,7 +130,9 @@ class StatsScreen extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -211,7 +200,9 @@ class StatsScreen extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -252,7 +243,9 @@ class StatsScreen extends ConsumerWidget {
       children: [
         Text(
           'About your data',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         Text(

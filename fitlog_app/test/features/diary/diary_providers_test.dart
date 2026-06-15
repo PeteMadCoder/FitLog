@@ -22,7 +22,7 @@ void main() {
 
       final initialMonth = DateTime(2026, 1);
       container.read(calendarMonthProvider.notifier).setMonth(initialMonth);
-      
+
       container.read(calendarMonthProvider.notifier).nextMonth();
       final nextMonth = container.read(calendarMonthProvider);
 
@@ -36,7 +36,7 @@ void main() {
 
       final initialMonth = DateTime(2026, 12);
       container.read(calendarMonthProvider.notifier).setMonth(initialMonth);
-      
+
       container.read(calendarMonthProvider.notifier).nextMonth();
       final nextMonth = container.read(calendarMonthProvider);
 
@@ -50,7 +50,7 @@ void main() {
 
       final initialMonth = DateTime(2026, 2);
       container.read(calendarMonthProvider.notifier).setMonth(initialMonth);
-      
+
       container.read(calendarMonthProvider.notifier).previousMonth();
       final prevMonth = container.read(calendarMonthProvider);
 
@@ -64,7 +64,7 @@ void main() {
 
       final initialMonth = DateTime(2026, 1);
       container.read(calendarMonthProvider.notifier).setMonth(initialMonth);
-      
+
       container.read(calendarMonthProvider.notifier).previousMonth();
       final prevMonth = container.read(calendarMonthProvider);
 

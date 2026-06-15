@@ -39,11 +39,11 @@ class AggregatedStats {
   });
 
   factory AggregatedStats.empty() => AggregatedStats(
-        totalDistanceMeters: 0,
-        totalDuration: Duration.zero,
-        totalCalories: 0,
-        workoutCount: 0,
-      );
+    totalDistanceMeters: 0,
+    totalDuration: Duration.zero,
+    totalCalories: 0,
+    workoutCount: 0,
+  );
 }
 
 /// Provider to track the selected timeframe for statistics.
@@ -87,13 +87,10 @@ Stream<AggregatedStats> dashboardStats(DashboardStatsRef ref) async* {
         .startTimeGreaterThan(startDate)
         .watch(fireImmediately: true)
         .map((workouts) {
-      return _aggregateWorkouts(workouts);
-    });
+          return _aggregateWorkouts(workouts);
+        });
   } else {
-    yield* isar.workouts
-        .where()
-        .watch(fireImmediately: true)
-        .map((workouts) {
+    yield* isar.workouts.where().watch(fireImmediately: true).map((workouts) {
       return _aggregateWorkouts(workouts);
     });
   }
@@ -116,4 +113,54 @@ AggregatedStats _aggregateWorkouts(List<Workout> workouts) {
     totalCalories: calories,
     workoutCount: workouts.length,
   );
+}
+
+/// Provider exposing the most recent completed workout.
+@riverpod
+Stream<Workout?> latestWorkout(LatestWorkoutRef ref) async* {
+  final isar = await ref.watch(isarProvider.future);
+  yield* isar.workouts
+      .where()
+      .sortByStartTimeDesc()
+      .limit(1)
+      .watch(fireImmediately: true)
+      .map((list) => list.isNotEmpty ? list.first : null);
+}
+
+/// Weekly activity summary grouped by sport type.
+class WeeklyActivitySummary {
+  final Map<String, AggregatedStats> statsBySport;
+
+  WeeklyActivitySummary({required this.statsBySport});
+}
+
+/// Provider exposing a weekly activity summary grouped by sport type.
+@riverpod
+Stream<WeeklyActivitySummary> weeklyActivitySummary(
+  WeeklyActivitySummaryRef ref,
+) async* {
+  final isar = await ref.watch(isarProvider.future);
+  final now = DateTime.now();
+
+  // Start of current week (Monday)
+  DateTime startDate = now.subtract(Duration(days: now.weekday - 1));
+  startDate = DateTime(startDate.year, startDate.month, startDate.day);
+
+  yield* isar.workouts
+      .filter()
+      .startTimeGreaterThan(startDate)
+      .watch(fireImmediately: true)
+      .map((workouts) {
+        final Map<String, List<Workout>> grouped = {};
+        for (final workout in workouts) {
+          grouped.putIfAbsent(workout.sportType, () => []).add(workout);
+        }
+
+        final Map<String, AggregatedStats> statsBySport = {};
+        grouped.forEach((sport, sportWorkouts) {
+          statsBySport[sport] = _aggregateWorkouts(sportWorkouts);
+        });
+
+        return WeeklyActivitySummary(statsBySport: statsBySport);
+      });
 }

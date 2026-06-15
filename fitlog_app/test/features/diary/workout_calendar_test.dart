@@ -14,18 +14,22 @@ class MockCalendarMonth extends CalendarMonth {
 }
 
 void main() {
-  testWidgets('WorkoutCalendar displays current month and days', (tester) async {
+  testWidgets('WorkoutCalendar displays current month and days', (
+    tester,
+  ) async {
     final testMonth = DateTime(2026, 6, 1);
-    
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          calendarMonthProvider.overrideWith(() => MockCalendarMonth(testMonth)),
-          workoutsByMonthProvider(testMonth).overrideWith((ref) => Stream.value([])),
+          calendarMonthProvider.overrideWith(
+            () => MockCalendarMonth(testMonth),
+          ),
+          workoutsByMonthProvider(
+            testMonth,
+          ).overrideWith((ref) => Stream.value([])),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: WorkoutCalendar()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: WorkoutCalendar())),
       ),
     );
 
@@ -37,7 +41,9 @@ void main() {
     expect(find.text('30'), findsOneWidget);
   });
 
-  testWidgets('WorkoutCalendar displays indicators for days with workouts', (tester) async {
+  testWidgets('WorkoutCalendar displays indicators for days with workouts', (
+    tester,
+  ) async {
     final testMonth = DateTime(2026, 6, 1);
     final workouts = [
       Workout()
@@ -51,12 +57,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          calendarMonthProvider.overrideWith(() => MockCalendarMonth(testMonth)),
-          workoutsByMonthProvider(testMonth).overrideWith((ref) => Stream.value(workouts)),
+          calendarMonthProvider.overrideWith(
+            () => MockCalendarMonth(testMonth),
+          ),
+          workoutsByMonthProvider(
+            testMonth,
+          ).overrideWith((ref) => Stream.value(workouts)),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: WorkoutCalendar()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: WorkoutCalendar())),
       ),
     );
 
@@ -65,17 +73,17 @@ void main() {
 
     // Day 15 should be visible
     expect(find.text('15'), findsOneWidget);
-    
+
     final day15Finder = find.ancestor(
       of: find.text('15'),
       matching: find.byType(InkWell),
     );
-    
+
     expect(day15Finder, findsOneWidget);
-    
+
     await tester.tap(find.text('15'));
     await tester.pumpAndSettle();
-    
+
     expect(find.text('Workouts on 15 June'), findsOneWidget);
     expect(find.text('RUNNING'), findsOneWidget);
   });
@@ -87,16 +95,17 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          workoutsByMonthProvider(currentMonth)
-              .overrideWith((ref) => Stream.value([])),
-          workoutsByMonthProvider(DateTime(now.year, now.month + 1))
-              .overrideWith((ref) => Stream.value([])),
-          workoutsByMonthProvider(DateTime(now.year, now.month - 1))
-              .overrideWith((ref) => Stream.value([])),
+          workoutsByMonthProvider(
+            currentMonth,
+          ).overrideWith((ref) => Stream.value([])),
+          workoutsByMonthProvider(
+            DateTime(now.year, now.month + 1),
+          ).overrideWith((ref) => Stream.value([])),
+          workoutsByMonthProvider(
+            DateTime(now.year, now.month - 1),
+          ).overrideWith((ref) => Stream.value([])),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: WorkoutCalendar()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: WorkoutCalendar())),
       ),
     );
     await tester.pump(); // Start stream
@@ -114,14 +123,14 @@ void main() {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
 
-    // In case the test runs on a machine with a different time, 
+    // In case the test runs on a machine with a different time,
     // we should use the actual current month.
     // However, the test might have started at the end of a month and rolled over.
     // For simplicity, let's just make sure we find *some* month name initially.
-    
+
     // Actually, I'll just check if the header text is present.
     final headerFinder = find.textContaining(now.year.toString());
     expect(headerFinder, findsOneWidget);

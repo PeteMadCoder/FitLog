@@ -246,7 +246,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       ] else if (trackingState.status ==
                           TrackingStatus.paused) ...[
                         ElevatedButton(
-                          onPressed: () => _showStopConfirmationSheet(context),
+                          onPressed: () => _showStopConfirmationDialog(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
@@ -288,14 +288,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  void _showStopConfirmationSheet(BuildContext context) {
-    showModalBottomSheet(
+  void _showStopConfirmationDialog(BuildContext context) {
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) {
-        return SafeArea(
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -316,11 +316,40 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          ref
-                              .read(trackingNotifierProvider.notifier)
-                              .discardTracking();
-                          Navigator.pop(ctx);
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: ctx,
+                            builder: (confirmCtx) => AlertDialog(
+                              title: const Text('Discard Workout?'),
+                              content: const Text(
+                                'This will delete all recorded data for this session. This action cannot be undone.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(confirmCtx, false),
+                                  child: const Text('CANCEL'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(confirmCtx, true),
+                                  child: const Text(
+                                    'DISCARD',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed == true) {
+                            ref
+                                .read(trackingNotifierProvider.notifier)
+                                .discardTracking();
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                            }
+                          }
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
@@ -337,41 +366,51 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
+                          // Capture navigator and context before the async operation
+                          // because the ActiveWorkoutScreen might be unmounted
+                          // when stopTracking transitions the state to idle.
+                          final navigator = Navigator.of(ctx);
+
                           final result = await ref
                               .read(trackingNotifierProvider.notifier)
                               .stopTracking();
-                          if (context.mounted) {
-                            Navigator.pop(ctx);
-                            result.fold(
-                              (workout) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Workout completed! Saved ${workout.gpsPoints.length} points.',
-                                    ),
-                                  ),
-                                );
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => WorkoutDetailScreen(
-                                      workoutId: workout.id,
-                                    ),
-                                  ),
-                                );
-                              },
-                              (failure) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(failure.message),
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.error,
-                                  ),
-                                );
-                              },
-                            );
+
+                          if (ctx.mounted) {
+                            navigator.pop();
                           }
+
+                          result.fold(
+                            (workout) {
+                              ScaffoldMessenger.of(
+                                navigator.context,
+                              ).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Workout completed! Saved ${workout.gpsPoints.length} points.',
+                                  ),
+                                ),
+                              );
+                              navigator.push(
+                                MaterialPageRoute(
+                                  builder: (context) => WorkoutDetailScreen(
+                                    workoutId: workout.id,
+                                  ),
+                                ),
+                              );
+                            },
+                            (failure) {
+                              ScaffoldMessenger.of(
+                                navigator.context,
+                              ).showSnackBar(
+                                SnackBar(
+                                  content: Text(failure.message),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
+                                ),
+                              );
+                            },
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(

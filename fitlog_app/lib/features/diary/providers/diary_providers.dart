@@ -39,17 +39,23 @@ class CalendarMonth extends _$CalendarMonth {
 
 /// Provider exposing workouts for a specific month.
 @riverpod
-Stream<List<Workout>> workoutsByMonth(WorkoutsByMonthRef ref, DateTime month) async* {
+Stream<List<Workout>> workoutsByMonth(
+  WorkoutsByMonthRef ref,
+  DateTime month,
+) async* {
   final isar = await ref.watch(isarProvider.future);
-  
+
   final startOfMonth = DateTime(month.year, month.month);
-  final endOfMonth = DateTime(month.year, month.month + 1).subtract(const Duration(milliseconds: 1));
+  final endOfMonth = DateTime(
+    month.year,
+    month.month + 1,
+  ).subtract(const Duration(milliseconds: 1));
 
   final query = isar.workouts
       .filter()
       .startTimeBetween(startOfMonth, endOfMonth)
       .sortByStartTimeDesc();
-      
+
   yield* query.watch(fireImmediately: true);
 }
 

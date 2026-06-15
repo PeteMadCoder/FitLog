@@ -33,21 +33,19 @@ void main() {
 
   testWidgets('StatsScreen timeframe selector works', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: StatsScreen()),
-      ),
+      const ProviderScope(child: MaterialApp(home: StatsScreen())),
     );
 
     await tester.pump();
 
     // Check if selector exists
     expect(find.byType(SegmentedButton<StatsTimeframe>), findsOneWidget);
-    
+
     // Tap 'Month'
     await tester.tap(find.text('Month'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    
+
     // We can't easily verify the provider state change here without a more complex setup,
     // but we can verify the widget responded if we wanted to.
   });

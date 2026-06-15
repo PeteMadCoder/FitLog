@@ -8,18 +8,31 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      expect(container.read(selectedStatsTimeframeProvider), equals(StatsTimeframe.weekly));
+      expect(
+        container.read(selectedStatsTimeframeProvider),
+        equals(StatsTimeframe.weekly),
+      );
     });
 
     test('setTimeframe should update state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      container.read(selectedStatsTimeframeProvider.notifier).setTimeframe(StatsTimeframe.monthly);
-      expect(container.read(selectedStatsTimeframeProvider), equals(StatsTimeframe.monthly));
+      container
+          .read(selectedStatsTimeframeProvider.notifier)
+          .setTimeframe(StatsTimeframe.monthly);
+      expect(
+        container.read(selectedStatsTimeframeProvider),
+        equals(StatsTimeframe.monthly),
+      );
 
-      container.read(selectedStatsTimeframeProvider.notifier).setTimeframe(StatsTimeframe.yearly);
-      expect(container.read(selectedStatsTimeframeProvider), equals(StatsTimeframe.yearly));
+      container
+          .read(selectedStatsTimeframeProvider.notifier)
+          .setTimeframe(StatsTimeframe.yearly);
+      expect(
+        container.read(selectedStatsTimeframeProvider),
+        equals(StatsTimeframe.yearly),
+      );
     });
   });
 

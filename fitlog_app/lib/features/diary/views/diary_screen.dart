@@ -40,8 +40,10 @@ class DiaryScreen extends ConsumerWidget {
               ? const SingleChildScrollView(child: WorkoutCalendar())
               : ListView.builder(
                   itemCount: workouts.length,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   itemBuilder: (context, index) {
                     final workout = workouts[index];
                     return _buildWorkoutCard(context, workout);

@@ -14,10 +14,8 @@ class WorkoutCalendar extends ConsumerWidget {
     final workoutsAsync = ref.watch(workoutsByMonthProvider(currentMonth));
 
     return workoutsAsync.when(
-      data: (workouts) => _CalendarGrid(
-        month: currentMonth,
-        workouts: workouts,
-      ),
+      data: (workouts) =>
+          _CalendarGrid(month: currentMonth, workouts: workouts),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
@@ -28,10 +26,7 @@ class _CalendarGrid extends ConsumerWidget {
   final DateTime month;
   final List<Workout> workouts;
 
-  const _CalendarGrid({
-    required this.month,
-    required this.workouts,
-  });
+  const _CalendarGrid({required this.month, required this.workouts});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,12 +36,12 @@ class _CalendarGrid extends ConsumerWidget {
     // Calendar logic
     final firstDayOfMonth = DateTime(month.year, month.month, 1);
     final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
-    
+
     // Adjust to start on Monday (1 = Monday, 7 = Sunday)
     // firstDayOfMonth.weekday: 1=Mon, ..., 7=Sun
     final leadingEmptyDays = firstDayOfMonth.weekday - 1;
     final daysInMonth = lastDayOfMonth.day;
-    
+
     final monthName = _getMonthName(month.month);
 
     // Group workouts by day for easy lookup
@@ -96,17 +91,19 @@ class _CalendarGrid extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                  .map((day) => Expanded(
-                        child: Center(
-                          child: Text(
-                            day,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.5),
-                              fontWeight: FontWeight.bold,
-                            ),
+                  .map(
+                    (day) => Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.5),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -128,12 +125,12 @@ class _CalendarGrid extends ConsumerWidget {
                 if (index < leadingEmptyDays) {
                   return const SizedBox.shrink();
                 }
-                
+
                 final day = index - leadingEmptyDays + 1;
                 final dayWorkouts = workoutsByDay[day] ?? [];
                 final hasWorkouts = dayWorkouts.isNotEmpty;
                 final isToday = _isToday(month.year, month.month, day);
-  
+
                 return _CalendarDayTile(
                   day: day,
                   isToday: isToday,
@@ -158,26 +155,29 @@ class _CalendarGrid extends ConsumerWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[month - 1];
   }
 
-  void _showDayWorkouts(
-    BuildContext context,
-    int day,
-    List<Workout> workouts,
-  ) {
+  void _showDayWorkouts(BuildContext context, int day, List<Workout> workouts) {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (context) => _DayWorkoutsSheet(
-        day: day,
-        month: month,
-        workouts: workouts,
-      ),
+      builder: (context) =>
+          _DayWorkoutsSheet(day: day, month: month, workouts: workouts),
     );
   }
 }
@@ -210,8 +210,8 @@ class _CalendarDayTile extends StatelessWidget {
           color: isToday
               ? colorScheme.primaryContainer.withOpacity(0.5)
               : hasWorkouts
-                  ? colorScheme.surfaceVariant.withOpacity(0.3)
-                  : null,
+              ? colorScheme.surfaceVariant.withOpacity(0.3)
+              : null,
           border: isToday
               ? Border.all(color: colorScheme.primary, width: 2)
               : null,
@@ -251,11 +251,16 @@ class _CalendarDayTile extends StatelessWidget {
 
   Color _getSportColor(String sportType) {
     switch (sportType.toLowerCase()) {
-      case 'running': return Colors.orange;
-      case 'cycling': return Colors.cyan;
-      case 'walking': return Colors.green;
-      case 'hiking': return Colors.brown;
-      default: return Colors.blue;
+      case 'running':
+        return Colors.orange;
+      case 'cycling':
+        return Colors.cyan;
+      case 'walking':
+        return Colors.green;
+      case 'hiking':
+        return Colors.brown;
+      default:
+        return Colors.blue;
     }
   }
 }
@@ -303,7 +308,9 @@ class _DayWorkoutsSheet extends StatelessWidget {
                 final workout = workouts[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _getSportColor(workout.sportType).withOpacity(0.2),
+                    backgroundColor: _getSportColor(
+                      workout.sportType,
+                    ).withOpacity(0.2),
                     child: Icon(
                       _getSportIcon(workout.sportType),
                       color: _getSportColor(workout.sportType),
@@ -335,29 +342,49 @@ class _DayWorkoutsSheet extends StatelessWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[month - 1];
   }
 
   IconData _getSportIcon(String sportType) {
     switch (sportType.toLowerCase()) {
-      case 'running': return Icons.directions_run;
-      case 'cycling': return Icons.directions_bike;
-      case 'walking': return Icons.directions_walk;
-      case 'hiking': return Icons.terrain;
-      default: return Icons.fitness_center;
+      case 'running':
+        return Icons.directions_run;
+      case 'cycling':
+        return Icons.directions_bike;
+      case 'walking':
+        return Icons.directions_walk;
+      case 'hiking':
+        return Icons.terrain;
+      default:
+        return Icons.fitness_center;
     }
   }
 
   Color _getSportColor(String sportType) {
     switch (sportType.toLowerCase()) {
-      case 'running': return Colors.orange;
-      case 'cycling': return Colors.cyan;
-      case 'walking': return Colors.green;
-      case 'hiking': return Colors.brown;
-      default: return Colors.blue;
+      case 'running':
+        return Colors.orange;
+      case 'cycling':
+        return Colors.cyan;
+      case 'walking':
+        return Colors.green;
+      case 'hiking':
+        return Colors.brown;
+      default:
+        return Colors.blue;
     }
   }
 
