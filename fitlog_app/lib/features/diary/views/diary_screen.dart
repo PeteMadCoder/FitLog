@@ -3,34 +3,50 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/diary/providers/diary_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/features/diary/views/workout_calendar.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
 
-/// Screen displaying a chronological list of all recorded workout sessions.
+/// Screen displaying a chronological list or calendar of all recorded workout sessions.
 class DiaryScreen extends ConsumerWidget {
   const DiaryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workoutsAsync = ref.watch(workoutHistoryProvider);
+    final isCalendarView = ref.watch(diaryViewModeProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout Diary'), centerTitle: false),
+      appBar: AppBar(
+        title: const Text('Workout Diary'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(isCalendarView ? Icons.view_list : Icons.calendar_month),
+            onPressed: () => ref.read(diaryViewModeProvider.notifier).toggle(),
+            tooltip: isCalendarView ? 'Show List' : 'Show Calendar',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: workoutsAsync.when(
         data: (workouts) {
           if (workouts.isEmpty) {
             return _buildEmptyState(context);
           }
-          return ListView.builder(
-            itemCount: workouts.length,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemBuilder: (context, index) {
-              final workout = workouts[index];
-              return _buildWorkoutCard(context, workout);
-            },
-          );
+          return isCalendarView
+              ? const SingleChildScrollView(child: WorkoutCalendar())
+              : ListView.builder(
+                  itemCount: workouts.length,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemBuilder: (context, index) {
+                    final workout = workouts[index];
+                    return _buildWorkoutCard(context, workout);
+                  },
+                );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(

@@ -61,7 +61,7 @@
 - [x] **4.1. Workout History List**
     - Create a provider to stream all workouts from Isar sorted by date.
     - Implement a list view with cards showing workout summaries.
-- [ ] **4.2. Calendar View**
+- [x] **4.2. Calendar View**
     - Implement a calendar-based grid in `features/diary/views/`.
     - Highlight days with activities (using dots or heat indicators).
 - [ ] **4.3. Statistics Dashboard**
