@@ -155,7 +155,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                         TileLayer(
                           urlTemplate:
                               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.madcoder.fitlog',
+                          userAgentPackageName: 'com.madcoder.fitlog.app',
                         ),
                         PolylineLayer(
                           polylines: [

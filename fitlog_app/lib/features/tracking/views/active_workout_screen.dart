@@ -77,7 +77,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.madcoder.fitlog',
+                userAgentPackageName: 'com.madcoder.fitlog.app',
               ),
               if (routePoints.isNotEmpty)
                 PolylineLayer(
