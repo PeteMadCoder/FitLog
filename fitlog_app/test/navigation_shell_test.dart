@@ -25,22 +25,26 @@ void main() {
 
     // Tap Tracker icon to navigate to Tracker tab.
     await tester.tap(find.byIcon(Icons.play_circle_outline));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Start Workout'), findsOneWidget);
 
     // Tap Maps icon to navigate to Maps tab.
     await tester.tap(find.byIcon(Icons.map_outlined));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Maps and Routes Screen'), findsOneWidget);
 
     // Tap Diary icon to navigate to Diary tab.
     await tester.tap(find.byIcon(Icons.calendar_month_outlined));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Workout Diary'), findsOneWidget);
 
     // Tap Stats icon to navigate to Stats tab.
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
-    await tester.pumpAndSettle();
-    expect(find.text('Statistics Dashboard Screen'), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Statistics'), findsOneWidget);
   });
 }

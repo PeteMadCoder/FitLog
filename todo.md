@@ -64,7 +64,7 @@
 - [x] **4.2. Calendar View**
     - Implement a calendar-based grid in `features/diary/views/`.
     - Highlight days with activities (using dots or heat indicators).
-- [ ] **4.3. Statistics Dashboard**
+- [x] **4.3. Statistics Dashboard**
     - Aggregate data (total distance, time, calories) across different timeframes (Weekly, Monthly, Yearly).
 
 ---
