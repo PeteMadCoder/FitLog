@@ -58,7 +58,7 @@
 
 ## Phase 4: Diary & History
 
-- [ ] **4.1. Workout History List**
+- [x] **4.1. Workout History List**
     - Create a provider to stream all workouts from Isar sorted by date.
     - Implement a list view with cards showing workout summaries.
 - [ ] **4.2. Calendar View**
