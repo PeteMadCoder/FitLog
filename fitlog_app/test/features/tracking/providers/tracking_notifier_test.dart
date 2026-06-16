@@ -309,5 +309,26 @@ void main() {
       expect(state.currentSpeed, equals(4.0));
       expect(state.currentAltitude, equals(105.0));
     });
+
+    test('setWorkoutName updates state and stopTracking saves it', () async {
+      final notifier = container.read(trackingNotifierProvider.notifier);
+      await notifier.startTracking('running');
+
+      notifier.setWorkoutName('Morning Run');
+      expect(
+        container.read(trackingNotifierProvider).name,
+        equals('Morning Run'),
+      );
+
+      final result = await notifier.stopTracking();
+      expect(result.isSuccess, isTrue);
+
+      final workout = result.successOrNullValue!;
+      expect(workout.name, equals('Morning Run'));
+
+      final savedWorkouts =
+          (fakeIsar.collection<Workout>() as FakeIsarCollection<Workout>).items;
+      expect(savedWorkouts.first.name, equals('Morning Run'));
+    });
   });
 }

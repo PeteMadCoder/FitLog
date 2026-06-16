@@ -51,15 +51,21 @@ class WorkoutDetailFamily extends Family<AsyncValue<Workout?>> {
   /// Automatically loads the associated GPS point links upon retrieval.
   ///
   /// Copied from [workoutDetail].
-  WorkoutDetailProvider call(int id) {
-    return WorkoutDetailProvider(id);
+  WorkoutDetailProvider call(
+    int id,
+  ) {
+    return WorkoutDetailProvider(
+      id,
+    );
   }
 
   @override
   WorkoutDetailProvider getProviderOverride(
     covariant WorkoutDetailProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -86,19 +92,24 @@ class WorkoutDetailProvider extends AutoDisposeStreamProvider<Workout?> {
   /// Automatically loads the associated GPS point links upon retrieval.
   ///
   /// Copied from [workoutDetail].
-  WorkoutDetailProvider(int id)
-    : this._internal(
-        (ref) => workoutDetail(ref as WorkoutDetailRef, id),
-        from: workoutDetailProvider,
-        name: r'workoutDetailProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$workoutDetailHash,
-        dependencies: WorkoutDetailFamily._dependencies,
-        allTransitiveDependencies:
-            WorkoutDetailFamily._allTransitiveDependencies,
-        id: id,
-      );
+  WorkoutDetailProvider(
+    int id,
+  ) : this._internal(
+          (ref) => workoutDetail(
+            ref as WorkoutDetailRef,
+            id,
+          ),
+          from: workoutDetailProvider,
+          name: r'workoutDetailProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$workoutDetailHash,
+          dependencies: WorkoutDetailFamily._dependencies,
+          allTransitiveDependencies:
+              WorkoutDetailFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   WorkoutDetailProvider._internal(
     super._createNotifier, {
@@ -155,8 +166,7 @@ mixin WorkoutDetailRef on AutoDisposeStreamProviderRef<Workout?> {
 }
 
 class _WorkoutDetailProviderElement
-    extends AutoDisposeStreamProviderElement<Workout?>
-    with WorkoutDetailRef {
+    extends AutoDisposeStreamProviderElement<Workout?> with WorkoutDetailRef {
   _WorkoutDetailProviderElement(super.provider);
 
   @override
@@ -171,14 +181,14 @@ String _$dashboardStatsHash() => r'11000863f6b3901389d44424305527f9fdebf35e';
 @ProviderFor(dashboardStats)
 final dashboardStatsProvider =
     AutoDisposeStreamProvider<AggregatedStats>.internal(
-      dashboardStats,
-      name: r'dashboardStatsProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$dashboardStatsHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  dashboardStats,
+  name: r'dashboardStatsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$dashboardStatsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef DashboardStatsRef = AutoDisposeStreamProviderRef<AggregatedStats>;
 String _$latestWorkoutHash() => r'241e35e78f1c2e694abab8ba46cb80487a3d92a1';
@@ -207,17 +217,17 @@ String _$weeklyActivitySummaryHash() =>
 @ProviderFor(weeklyActivitySummary)
 final weeklyActivitySummaryProvider =
     AutoDisposeStreamProvider<WeeklyActivitySummary>.internal(
-      weeklyActivitySummary,
-      name: r'weeklyActivitySummaryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$weeklyActivitySummaryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  weeklyActivitySummary,
+  name: r'weeklyActivitySummaryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$weeklyActivitySummaryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef WeeklyActivitySummaryRef =
-    AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
+typedef WeeklyActivitySummaryRef
+    = AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
 String _$selectedStatsTimeframeHash() =>
     r'8d6d05b048d97a49b635b1d1158f3cedb36e4139';
 
@@ -225,19 +235,16 @@ String _$selectedStatsTimeframeHash() =>
 ///
 /// Copied from [SelectedStatsTimeframe].
 @ProviderFor(SelectedStatsTimeframe)
-final selectedStatsTimeframeProvider =
-    AutoDisposeNotifierProvider<
-      SelectedStatsTimeframe,
-      StatsTimeframe
-    >.internal(
-      SelectedStatsTimeframe.new,
-      name: r'selectedStatsTimeframeProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$selectedStatsTimeframeHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final selectedStatsTimeframeProvider = AutoDisposeNotifierProvider<
+    SelectedStatsTimeframe, StatsTimeframe>.internal(
+  SelectedStatsTimeframe.new,
+  name: r'selectedStatsTimeframeProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$selectedStatsTimeframeHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$SelectedStatsTimeframe = AutoDisposeNotifier<StatsTimeframe>;
 // ignore_for_file: type=lint

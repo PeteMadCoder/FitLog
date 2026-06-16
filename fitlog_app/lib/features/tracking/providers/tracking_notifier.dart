@@ -96,6 +96,11 @@ class TrackingNotifier extends _$TrackingNotifier {
     state = TrackingState.initial();
   }
 
+  /// Sets the custom name for the active workout session.
+  void setWorkoutName(String name) {
+    state = state.copyWith(name: name);
+  }
+
   /// Stops tracking, cancels updates, persists the workout session data to Isar database,
   /// and resets the notifier to idle.
   Future<Result<Workout, AppException>> stopTracking() async {
@@ -104,6 +109,7 @@ class TrackingNotifier extends _$TrackingNotifier {
     state = TrackingState.initial();
 
     final workout = Workout()
+      ..name = recordedState.name
       ..sportType = recordedState.sportType
       ..startTime = recordedState.startTime ?? DateTime.now()
       ..endTime = DateTime.now()

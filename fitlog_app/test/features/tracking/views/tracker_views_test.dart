@@ -108,5 +108,36 @@ void main() {
         expect(find.byIcon(Icons.stop), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Tapping stop in ActiveWorkoutScreen shows End Workout dialog with name field',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Start workout
+        await tester.tap(find.text('START WORKOUT'));
+        await tester.pumpAndSettle();
+
+        // Pause workout
+        await tester.tap(find.byIcon(Icons.pause));
+        await tester.pumpAndSettle();
+
+        // Tap Stop button
+        await tester.tap(find.byIcon(Icons.stop));
+        await tester.pumpAndSettle();
+
+        // Verify End Workout dialog is shown
+        expect(find.text('End Workout'), findsOneWidget);
+        expect(find.text('Workout Name (Optional)'), findsOneWidget);
+
+        // Enter a name
+        await tester.enterText(find.byType(TextField), 'My Custom Workout');
+        expect(find.text('My Custom Workout'), findsOneWidget);
+
+        expect(find.text('Save Workout'), findsOneWidget);
+        expect(find.text('Discard'), findsOneWidget);
+      },
+    );
   });
 }

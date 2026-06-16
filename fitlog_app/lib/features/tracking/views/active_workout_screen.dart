@@ -289,6 +289,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   void _showStopConfirmationDialog(BuildContext context) {
+    final nameController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
@@ -310,6 +311,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   'Would you like to save this workout or discard it?',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Workout Name (Optional)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -366,6 +378,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
+                          final name = nameController.text.trim();
+                          if (name.isNotEmpty) {
+                            ref
+                                .read(trackingNotifierProvider.notifier)
+                                .setWorkoutName(name);
+                          }
+
                           // Capture navigator and context before the async operation
                           // because the ActiveWorkoutScreen might be unmounted
                           // when stopTracking transitions the state to idle.

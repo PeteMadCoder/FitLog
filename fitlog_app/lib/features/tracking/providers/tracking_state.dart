@@ -7,6 +7,7 @@ enum TrackingStatus { idle, recording, paused }
 /// Repersents the live data stream of an active workout session.
 class TrackingState {
   final TrackingStatus status;
+  final String? name;
   final String sportType;
   final DateTime? startTime;
   final double durationSeconds;
@@ -19,6 +20,7 @@ class TrackingState {
 
   const TrackingState({
     required this.status,
+    this.name,
     required this.sportType,
     this.startTime,
     this.durationSeconds = 0.0,
@@ -40,6 +42,7 @@ class TrackingState {
 
   TrackingState copyWith({
     TrackingStatus? status,
+    String? name,
     String? sportType,
     DateTime? startTime,
     double? durationSeconds,
@@ -52,6 +55,7 @@ class TrackingState {
   }) {
     return TrackingState(
       status: status ?? this.status,
+      name: name ?? this.name,
       sportType: sportType ?? this.sportType,
       startTime: startTime ?? this.startTime,
       durationSeconds: durationSeconds ?? this.durationSeconds,

@@ -148,7 +148,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                           padding: const EdgeInsets.all(32.0),
                         ),
                         interactionOptions: const InteractionOptions(
-                          flags: InteractiveFlag.none,
+                          flags: InteractiveFlag.all,
                         ),
                       ),
                       children: [
