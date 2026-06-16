@@ -316,9 +316,15 @@ class BackupService {
     final trkNode = _findElementsByLocalName(gpxElement, 'trk').firstOrNull;
 
     final metadataName = metadataNode != null ? _findElementsByLocalName(metadataNode, 'name').firstOrNull?.innerText : null;
+    final metadataDesc = metadataNode != null ? _findElementsByLocalName(metadataNode, 'desc').firstOrNull?.innerText : null;
     final trkName = trkNode != null ? _findElementsByLocalName(trkNode, 'name').firstOrNull?.innerText : null;
+    final trkDesc = trkNode != null ? _findElementsByLocalName(trkNode, 'desc').firstOrNull?.innerText : null;
 
-    if (trkName != null && trkName.trim().isNotEmpty) {
+    if (trkDesc != null && trkDesc.trim().isNotEmpty) {
+      workoutName = trkDesc.trim();
+    } else if (metadataDesc != null && metadataDesc.trim().isNotEmpty) {
+      workoutName = metadataDesc.trim();
+    } else if (trkName != null && trkName.trim().isNotEmpty) {
       workoutName = trkName.trim();
     } else if (metadataName != null && metadataName.trim().isNotEmpty) {
       workoutName = metadataName.trim();

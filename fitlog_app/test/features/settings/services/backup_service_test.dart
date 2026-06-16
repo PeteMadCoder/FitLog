@@ -156,6 +156,31 @@ void main() {
       expect(parsed.gpsPoints.length, equals(2));
     });
 
+    test('GPX Parsing prefers description tag inside metadata or track for workout name', () {
+      const gpxContent = '''<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Sports Tracker" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>03/06/26 05:49</name>
+    <desc>Fronteira 2026 - Miranda do Douro - Bragança</desc>
+  </metadata>
+  <trk>
+    <name>03/06/26 05:49</name>
+    <trkseg>
+      <trkpt lat="41.1496" lon="-8.6110">
+        <time>2026-06-16T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="41.1500" lon="-8.6120">
+        <time>2026-06-16T10:01:40Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>''';
+
+      final service = container.read(backupServiceProvider);
+      final parsed = service.parseGpx(gpxContent);
+      expect(parsed.workout.name, equals('Fronteira 2026 - Miranda do Douro - Bragança'));
+    });
+
     test('TCX Parsing parses points and heart rate data', () {
       const tcxContent = '''<?xml version="1.0" encoding="UTF-8"?>
 <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">

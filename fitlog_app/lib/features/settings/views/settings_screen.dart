@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../tracking/models/sport_type.dart';
 import '../providers/settings_provider.dart';
 import '../services/backup_service.dart';
 
@@ -317,15 +318,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ? backupService.parseTcx(content) 
             : backupService.parseGpx(content);
 
-        await backupService.saveWorkout(parsedWorkout);
+        // Turn off loader spinner while presenting the dialog
+        setState(() {
+          _isProcessingBackup = false;
+        });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Imported "${parsedWorkout.workout.name}" successfully!'),
-              backgroundColor: Colors.green,
-            ),
+          final confirmedWorkout = await showDialog<ParsedWorkout>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => _WorkoutImportPreviewDialog(initialWorkout: parsedWorkout),
           );
+
+          if (confirmedWorkout != null) {
+            setState(() {
+              _isProcessingBackup = true;
+            });
+            await backupService.saveWorkout(confirmedWorkout);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Imported "${confirmedWorkout.workout.name}" successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          }
         }
       }
     } catch (e) {
@@ -338,9 +356,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     } finally {
-      setState(() {
-        _isProcessingBackup = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessingBackup = false;
+        });
+      }
     }
   }
 
@@ -598,6 +618,163 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WorkoutImportPreviewDialog extends ConsumerStatefulWidget {
+  final ParsedWorkout initialWorkout;
+
+  const _WorkoutImportPreviewDialog({required this.initialWorkout});
+
+  @override
+  ConsumerState<_WorkoutImportPreviewDialog> createState() => _WorkoutImportPreviewDialogState();
+}
+
+class _WorkoutImportPreviewDialogState extends ConsumerState<_WorkoutImportPreviewDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late String _selectedSportId;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialWorkout.workout.name);
+    
+    final initialSportId = widget.initialWorkout.workout.sportType;
+    final exists = SportType.all.any((s) => s.id == initialSportId);
+    _selectedSportId = exists ? initialSportId : 'running';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final workout = widget.initialWorkout.workout;
+    final theme = Theme.of(context);
+    final distanceKm = (workout.distanceMeters / 1000).toStringAsFixed(2);
+    
+    final duration = Duration(seconds: workout.durationSeconds.toInt());
+    final hours = duration.inHours.toString().padLeft(2, '0');
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    final durationStr = '$hours:$minutes:$seconds';
+
+    return AlertDialog(
+      title: const Text('Import Workout Preview'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('Date', workout.startTime.toLocal().toString().split('.')[0]),
+              _buildStatRow('Distance', '$distanceKm km'),
+              _buildStatRow('Duration', durationStr),
+              if (workout.averageHeartRate != null)
+                _buildStatRow('Avg HR', '${workout.averageHeartRate!.toStringAsFixed(0)} bpm'),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              DropdownButtonFormField<String>(
+                value: _selectedSportId,
+                decoration: const InputDecoration(
+                  labelText: 'Sport Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: SportType.all.map((s) => DropdownMenuItem(
+                  value: s.id,
+                  child: Row(
+                    children: [
+                      Icon(s.icon, color: s.color, size: 20),
+                      const SizedBox(width: 8),
+                      Text(s.name),
+                    ],
+                  ),
+                )).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedSportId = val;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final updatedWorkout = widget.initialWorkout.workout
+                ..name = _nameController.text.trim()
+                ..sportType = _selectedSportId;
+
+              // Re-estimate calories dynamically
+              double met = 8.0;
+              if (_selectedSportId == 'cycling' || _selectedSportId == 'indoor_cycling' || _selectedSportId == 'mountain_biking') met = 7.5;
+              else if (_selectedSportId == 'walking' || _selectedSportId == 'nordic_walking') met = 3.5;
+              else if (_selectedSportId == 'hiking' || _selectedSportId == 'trekking') met = 6.0;
+
+              double weightKg = 70.0;
+              final settings = ref.read(settingsStateProvider).value;
+              if (settings != null && settings.weight != null) {
+                weightKg = settings.weight!;
+              }
+
+              updatedWorkout.calories = met * weightKg * (updatedWorkout.durationSeconds / 3600.0);
+              
+              final result = ParsedWorkout(
+                workout: updatedWorkout,
+                gpsPoints: widget.initialWorkout.gpsPoints,
+                sensorData: widget.initialWorkout.sensorData,
+              );
+              Navigator.pop(context, result);
+            }
+          },
+          child: const Text('Save & Import'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.grey)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
