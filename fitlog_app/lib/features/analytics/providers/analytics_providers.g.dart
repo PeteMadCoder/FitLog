@@ -228,7 +228,7 @@ final weeklyActivitySummaryProvider =
 
 typedef WeeklyActivitySummaryRef
     = AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
-String _$workoutEditorHash() => r'fb140d8082219f5e4ee87f5c24c1ddaed5e16420';
+String _$workoutEditorHash() => r'ef16eff03beeef6f47f3ee665fa0702f5b51bf65';
 
 /// Notifier to handle editing and deleting workouts.
 ///

@@ -5,6 +5,7 @@ import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
 import 'package:fitlog_app/features/tracking/models/sport_type.dart';
+import 'package:fitlog_app/features/settings/views/settings_screen.dart';
 
 /// Home Dashboard showing a summary of the last workout and weekly statistics.
 class HomeScreen extends ConsumerWidget {
@@ -22,6 +23,17 @@ class HomeScreen extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(latestWorkoutProvider.future),
