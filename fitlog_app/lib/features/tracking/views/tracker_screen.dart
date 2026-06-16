@@ -104,12 +104,12 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.12),
+                          color: selectedSportType.color.withOpacity(0.12),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           selectedSportType.icon,
-                          color: theme.colorScheme.primary,
+                          color: selectedSportType.color,
                           size: 32,
                         ),
                       ),
