@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
@@ -271,6 +272,37 @@ class BackupService {
     } else {
       throw Exception('Database file default.isar not found at ${dir.path}');
     }
+  }
+
+  /// Reads and returns the raw database file bytes.
+  Future<Uint8List> getDatabaseBytes() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final dbFile = File('${dir.path}/default.isar');
+    if (await dbFile.exists()) {
+      return await dbFile.readAsBytes();
+    } else {
+      throw Exception('Database file default.isar not found at ${dir.path}');
+    }
+  }
+
+  /// Overwrites the raw database file (default.isar) with the backup from the specified path.
+  Future<void> importDatabase(String sourcePath) async {
+    final isar = await _ref.read(isarProvider.future);
+    
+    // Close current instance
+    await isar.close();
+
+    final dir = await getApplicationDocumentsDirectory();
+    final dbFile = File('${dir.path}/default.isar');
+    final sourceFile = File(sourcePath);
+    if (await sourceFile.exists()) {
+      await sourceFile.copy(dbFile.path);
+    } else {
+      throw Exception('Source database file not found at $sourcePath');
+    }
+
+    // Invalidate isarProvider so next access opens the new database
+    _ref.invalidate(isarProvider);
   }
 
   /// Parses a GPX XML string into a ParsedWorkout wrapper.

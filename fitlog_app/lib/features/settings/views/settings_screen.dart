@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -84,16 +86,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     try {
       final jsonString = await ref.read(backupServiceProvider).exportToJson();
+      final bytes = Uint8List.fromList(utf8.encode(jsonString));
       final path = await FilePicker.saveFile(
         dialogTitle: 'Save JSON Backup',
         fileName: 'fitlog_backup.json',
         allowedExtensions: ['json'],
         type: FileType.custom,
+        bytes: bytes,
       );
 
       if (path != null) {
-        final file = File(path);
-        await file.writeAsString(jsonString);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -119,7 +121,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<bool> _showConfirmationDialog({
+    required String title,
+    required String content,
+    required String confirmText,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<void> _importJson() async {
+    final confirm = await _showConfirmationDialog(
+      title: 'Import JSON Backup',
+      content: 'This will overwrite your profile settings and append new workout entries. Do you want to proceed?',
+      confirmText: 'Import',
+    );
+    if (!confirm) return;
+
     setState(() {
       _isProcessingBackup = true;
     });
@@ -172,15 +206,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
 
     try {
+      final dbBytes = await ref.read(backupServiceProvider).getDatabaseBytes();
       final path = await FilePicker.saveFile(
         dialogTitle: 'Save Database Backup',
         fileName: 'default.isar',
         allowedExtensions: ['isar'],
         type: FileType.custom,
+        bytes: dbBytes,
       );
 
       if (path != null) {
-        await ref.read(backupServiceProvider).exportDatabase(path);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -195,6 +230,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to export database: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isProcessingBackup = false;
+      });
+    }
+  }
+
+  Future<void> _importIsarDb() async {
+    final confirm = await _showConfirmationDialog(
+      title: 'Full Database Import',
+      content: 'WARNING: This will completely overwrite your current database. All current workouts and settings will be permanently replaced. Do you want to proceed?',
+      confirmText: 'Overwrite',
+    );
+    if (!confirm) return;
+
+    setState(() {
+      _isProcessingBackup = true;
+    });
+
+    try {
+      final result = await FilePicker.pickFiles(
+        dialogTitle: 'Select Database Backup File',
+        type: FileType.custom,
+        allowedExtensions: ['isar'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        await ref.read(backupServiceProvider).importDatabase(result.files.single.path!);
+        
+        // Reset initialization so any local settings form is correctly aligned
+        setState(() {
+          _initialized = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Database imported successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to import database: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -488,6 +575,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: const Text('Export raw database file (default.isar) for manual backup.'),
               trailing: const Icon(Icons.chevron_right),
               onTap: _exportIsarDb,
+            ),
+            const Divider(height: 8),
+
+            // Full DB Import
+            ListTile(
+              leading: const Icon(Icons.settings_backup_restore_outlined),
+              title: const Text('Full Database Import'),
+              subtitle: const Text('Import raw database file (default.isar) to restore from manual backup.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _importIsarDb,
             ),
             const Divider(height: 8),
 

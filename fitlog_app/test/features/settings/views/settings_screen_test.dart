@@ -65,6 +65,7 @@ void main() {
     expect(find.text('Export Data to JSON'), findsOneWidget);
     expect(find.text('Import Data from JSON'), findsOneWidget);
     expect(find.text('Full Database Export'), findsOneWidget);
+    expect(find.text('Full Database Import'), findsOneWidget);
     expect(find.text('Import Workout (GPX / TCX)'), findsOneWidget);
   });
 

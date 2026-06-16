@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
@@ -16,6 +17,16 @@ class TestBackupService extends BackupService {
   final Map<int, List<SensorData>> fakeSensorData = {};
 
   TestBackupService(super.ref, this.fakeWorkouts);
+
+  @override
+  Future<Uint8List> getDatabaseBytes() async {
+    return Uint8List(0);
+  }
+
+  @override
+  Future<void> importDatabase(String sourcePath) async {
+    // Fake database import in unit test
+  }
 
   @override
   Future<List<Workout>> fetchAllWorkouts() async {
