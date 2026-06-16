@@ -183,5 +183,98 @@ void main() {
         expect(find.text('AVG PACE'), findsNWidgets(2));
       },
     );
+
+    testWidgets('edit name dialog updates the name', (
+      WidgetTester tester,
+    ) async {
+      final workout = Workout()
+        ..sportType = 'running'
+        ..startTime = DateTime(2026, 6, 14, 10, 0)
+        ..name = 'Old Name';
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutDetailProvider(
+              1,
+            ).overrideWith((ref) => Stream.value(workout)),
+          ],
+          child: const MaterialApp(home: WorkoutDetailScreen(workoutId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap Edit button
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      // Verify dialog
+      expect(find.text('Edit Workout Name'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Old Name'), findsOneWidget);
+
+      // Enter new name
+      await tester.enterText(find.byType(TextField), 'New Name');
+      await tester.tap(find.text('SAVE'));
+      await tester.pumpAndSettle();
+
+      // Dialog should be closed
+      expect(find.text('Edit Workout Name'), findsNothing);
+    });
+
+    testWidgets('delete workout shows confirmation and pops', (
+      WidgetTester tester,
+    ) async {
+      final workout = Workout()
+        ..sportType = 'running'
+        ..startTime = DateTime(2026, 6, 14, 10, 0);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutDetailProvider(
+              1,
+            ).overrideWith((ref) => Stream.value(workout)),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const WorkoutDetailScreen(workoutId: 1),
+                      ),
+                    );
+                  },
+                  child: const Text('Go'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Open screen
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+      expect(find.byType(WorkoutDetailScreen), findsOneWidget);
+
+      // Tap Delete button
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Verify dialog
+      expect(find.text('Delete Workout?'), findsOneWidget);
+
+      // Tap DELETE
+      await tester.tap(find.text('DELETE'));
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+
+      // Screen should be closed (popped)
+      expect(find.byType(WorkoutDetailScreen), findsNothing);
+    });
   });
 }

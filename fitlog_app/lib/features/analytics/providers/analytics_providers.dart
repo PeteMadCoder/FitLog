@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:isar/isar.dart';
 import 'package:fitlog_app/app/app_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/tracking/models/gps_point.dart';
+import 'package:fitlog_app/features/tracking/models/sensor_data.dart';
 
 part 'analytics_providers.g.dart';
 
@@ -18,6 +20,41 @@ Stream<Workout?> workoutDetail(WorkoutDetailRef ref, int id) async* {
       await workout.gpsPoints.load();
     }
     yield workout;
+  }
+}
+
+/// Notifier to handle editing and deleting workouts.
+@riverpod
+class WorkoutEditor extends _$WorkoutEditor {
+  @override
+  void build() {}
+
+  /// Updates the name of a workout.
+  Future<void> updateWorkoutName(int id, String newName) async {
+    final isar = await ref.read(isarProvider.future);
+    await isar.writeTxn(() async {
+      final workout = await isar.workouts.get(id);
+      if (workout != null) {
+        workout.name = newName;
+        await isar.workouts.put(workout);
+      }
+    });
+  }
+
+  /// Deletes a workout and its associated GPS points and sensor data.
+  Future<void> deleteWorkout(int id) async {
+    final isar = await ref.read(isarProvider.future);
+    await isar.writeTxn(() async {
+      final workout = await isar.workouts.get(id);
+      if (workout != null) {
+        final gpsIds = workout.gpsPoints.map((p) => p.id).toList();
+        final sensorIds = workout.sensorData.map((s) => s.id).toList();
+        
+        await isar.collection<GpsPoint>().deleteAll(gpsIds);
+        await isar.collection<SensorData>().deleteAll(sensorIds);
+        await isar.workouts.delete(id);
+      }
+    });
   }
 }
 

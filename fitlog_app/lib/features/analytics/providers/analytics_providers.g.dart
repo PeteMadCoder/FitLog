@@ -228,6 +228,24 @@ final weeklyActivitySummaryProvider =
 
 typedef WeeklyActivitySummaryRef
     = AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
+String _$workoutEditorHash() => r'fb140d8082219f5e4ee87f5c24c1ddaed5e16420';
+
+/// Notifier to handle editing and deleting workouts.
+///
+/// Copied from [WorkoutEditor].
+@ProviderFor(WorkoutEditor)
+final workoutEditorProvider =
+    AutoDisposeNotifierProvider<WorkoutEditor, void>.internal(
+  WorkoutEditor.new,
+  name: r'workoutEditorProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$workoutEditorHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$WorkoutEditor = AutoDisposeNotifier<void>;
 String _$selectedStatsTimeframeHash() =>
     r'8d6d05b048d97a49b635b1d1158f3cedb36e4139';
 

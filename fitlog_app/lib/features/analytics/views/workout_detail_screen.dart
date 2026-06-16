@@ -38,6 +38,18 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: theme.colorScheme.onSurface,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _showEditNameDialog(context),
+            tooltip: 'Edit Name',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _showDeleteConfirmation(context),
+            tooltip: 'Delete Workout',
+          ),
+        ],
       ),
       body: workoutAsync.when(
         data: (workout) {
@@ -860,5 +872,75 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     final minuteStr = dt.minute.toString().padLeft(2, '0');
     final hourStr = dt.hour.toString().padLeft(2, '0');
     return '$month ${dt.day}, ${dt.year} at $hourStr:$minuteStr';
+  }
+
+  void _showEditNameDialog(BuildContext context) {
+    final workout = ref.read(workoutDetailProvider(widget.workoutId)).value;
+    if (workout == null) return;
+
+    final controller = TextEditingController(text: workout.name);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Workout Name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'Enter workout name',
+            labelText: 'Name',
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newName = controller.text.trim();
+              ref
+                  .read(workoutEditorProvider.notifier)
+                  .updateWorkoutName(widget.workoutId, newName);
+              Navigator.pop(ctx);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Workout?'),
+        content: const Text(
+          'This will permanently remove this workout and all its data. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref
+                  .read(workoutEditorProvider.notifier)
+                  .deleteWorkout(widget.workoutId);
+              Navigator.pop(ctx); // Close dialog
+              Navigator.pop(context); // Close detail screen
+            },
+            child: const Text(
+              'DELETE',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
