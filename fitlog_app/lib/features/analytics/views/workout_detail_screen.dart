@@ -131,7 +131,20 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
           ),
           const SizedBox(height: 24),
 
-          // 2. Static Route Map
+          // 2. Grid of Summary Metrics
+          const Text(
+            'PERFORMANCE STATISTICS',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildMetricsGrid(workout),
+          const SizedBox(height: 32),
+
+          // 3. Static Route Map
           Container(
             height: 240,
             width: double.infinity,
@@ -238,19 +251,6 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                     ),
             ),
           ),
-          const SizedBox(height: 28),
-
-          // 3. Grid of Summary Metrics
-          const Text(
-            'PERFORMANCE STATISTICS',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildMetricsGrid(workout),
           const SizedBox(height: 32),
 
           // 4. Interactive Charts Section
