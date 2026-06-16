@@ -1,9 +1,18 @@
 import 'package:fitlog_app/app/main_navigation_shell.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
 import 'package:fitlog_app/features/diary/providers/diary_providers.dart';
+import 'package:fitlog_app/features/settings/models/user_settings.dart';
+import 'package:fitlog_app/features/settings/providers/settings_provider.dart';
 import 'package:fitlog_app/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class FakeSettingsState extends SettingsState {
+  @override
+  Future<UserSettings> build() async {
+    return UserSettings();
+  }
+}
 
 void main() {
   testWidgets('App initialization smoke test renders Navigation Shell', (
@@ -19,6 +28,7 @@ void main() {
             (ref) => Stream.value(WeeklyActivitySummary(statsBySport: {})),
           ),
           workoutHistoryProvider.overrideWith((ref) => Stream.value([])),
+          settingsStateProvider.overrideWith(() => FakeSettingsState()),
         ],
         child: const FitLogApp(),
       ),

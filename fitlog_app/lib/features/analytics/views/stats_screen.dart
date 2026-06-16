@@ -19,17 +19,6 @@ class StatsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Statistics'),
         centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

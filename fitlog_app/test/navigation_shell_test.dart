@@ -2,9 +2,18 @@ import 'package:fitlog_app/app/main_navigation_shell.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
 import 'package:fitlog_app/features/diary/providers/diary_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/settings/models/user_settings.dart';
+import 'package:fitlog_app/features/settings/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class FakeSettingsState extends SettingsState {
+  @override
+  Future<UserSettings> build() async {
+    return UserSettings();
+  }
+}
 
 void main() {
   testWidgets('Navigation Shell switches tabs on tap', (
@@ -22,6 +31,7 @@ void main() {
           weeklyActivitySummaryProvider.overrideWith(
             (ref) => Stream.value(WeeklyActivitySummary(statsBySport: {})),
           ),
+          settingsStateProvider.overrideWith(() => FakeSettingsState()),
         ],
         child: const MaterialApp(home: MainNavigationShell()),
       ),
@@ -51,5 +61,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Statistics'), findsOneWidget);
+
+    // Tap Settings icon to navigate to Settings tab.
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Data Management & Backup'), findsOneWidget);
   });
 }

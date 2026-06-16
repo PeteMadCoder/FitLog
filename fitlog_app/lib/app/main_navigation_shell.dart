@@ -2,12 +2,13 @@ import 'package:fitlog_app/features/home/views/home_screen.dart';
 import 'package:fitlog_app/features/tracking/views/tracker_screen.dart';
 import 'package:fitlog_app/features/diary/views/diary_screen.dart';
 import 'package:fitlog_app/features/analytics/views/stats_screen.dart';
+import 'package:fitlog_app/features/settings/views/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_providers.dart';
 
 /// The main application shell hosting the bottom navigation bar and
-/// orchestrating swaps between the four core features.
+/// orchestrating swaps between the core features.
 class MainNavigationShell extends ConsumerWidget {
   const MainNavigationShell({super.key});
 
@@ -16,6 +17,7 @@ class MainNavigationShell extends ConsumerWidget {
     TrackerScreen(),
     DiaryScreen(),
     StatsScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -49,6 +51,11 @@ class MainNavigationShell extends ConsumerWidget {
             icon: Icon(Icons.bar_chart_outlined),
             activeIcon: Icon(Icons.bar_chart),
             label: 'Stats',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

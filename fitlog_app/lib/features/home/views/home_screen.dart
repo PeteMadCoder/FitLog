@@ -23,17 +23,6 @@ class HomeScreen extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(latestWorkoutProvider.future),
