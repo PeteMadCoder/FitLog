@@ -27,6 +27,7 @@ class WorkoutDetailScreen extends ConsumerStatefulWidget {
 
 class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   int _selectedChartIndex = 0; // 0 for Elevation, 1 for Speed, 2 for Pace
+  int? _selectedSpotIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +225,30 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                                 ),
                               ),
                             ),
+                            // Highlighted spot marker (Blue)
+                            if (_selectedSpotIndex != null && _selectedSpotIndex! < routePoints.length)
+                              Marker(
+                                point: routePoints[_selectedSpotIndex!],
+                                width: 24,
+                                height: 24,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black38,
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ],
@@ -592,6 +617,20 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   ),
                   borderData: FlBorderData(show: false),
                   lineTouchData: LineTouchData(
+                    touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                      if (!event.isInterestedForInteractions ||
+                          touchResponse == null ||
+                          touchResponse.lineBarSpots == null ||
+                          touchResponse.lineBarSpots!.isEmpty) {
+                        return;
+                      }
+                      final spotIndex = touchResponse.lineBarSpots!.first.spotIndex;
+                      if (_selectedSpotIndex != spotIndex) {
+                        setState(() {
+                          _selectedSpotIndex = spotIndex;
+                        });
+                      }
+                    },
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (spot) =>
                           colorScheme.surfaceContainerHighest,
