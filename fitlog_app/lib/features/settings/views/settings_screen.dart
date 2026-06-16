@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../tracking/models/sport_type.dart';
+import '../../tracking/views/tracker_screen.dart';
 import '../providers/settings_provider.dart';
 import '../services/backup_service.dart';
 
@@ -653,6 +654,28 @@ class _WorkoutImportPreviewDialogState extends ConsumerState<_WorkoutImportPrevi
     super.dispose();
   }
 
+  Future<void> _showSportPicker() async {
+    final selected = await showModalBottomSheet<SportType>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SportPickerSheet(
+          initialSport: SportType.fromId(_selectedSportId),
+        ),
+      ),
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedSportId = selected.id;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final workout = widget.initialWorkout.workout;
@@ -664,6 +687,8 @@ class _WorkoutImportPreviewDialogState extends ConsumerState<_WorkoutImportPrevi
     final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
     final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
     final durationStr = '$hours:$minutes:$seconds';
+
+    final selectedSportType = SportType.fromId(_selectedSportId);
 
     return AlertDialog(
       title: const Text('Import Workout Preview'),
@@ -698,29 +723,28 @@ class _WorkoutImportPreviewDialogState extends ConsumerState<_WorkoutImportPrevi
               ),
               const SizedBox(height: 16),
 
-              DropdownButtonFormField<String>(
-                value: _selectedSportId,
-                decoration: const InputDecoration(
-                  labelText: 'Sport Type',
-                  border: OutlineInputBorder(),
-                ),
-                items: SportType.all.map((s) => DropdownMenuItem(
-                  value: s.id,
+              InkWell(
+                onTap: _showSportPicker,
+                borderRadius: BorderRadius.circular(8),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Sport Type',
+                    border: OutlineInputBorder(),
+                  ),
                   child: Row(
                     children: [
-                      Icon(s.icon, color: s.color, size: 20),
-                      const SizedBox(width: 8),
-                      Text(s.name),
+                      Icon(selectedSportType.icon, color: selectedSportType.color, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          selectedSportType.name,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down),
                     ],
                   ),
-                )).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedSportId = val;
-                    });
-                  }
-                },
+                ),
               ),
             ],
           ),

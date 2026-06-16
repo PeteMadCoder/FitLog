@@ -27,7 +27,7 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: _SportPickerSheet(
+        child: SportPickerSheet(
           initialSport: SportType.fromId(_selectedSport),
         ),
       ),
@@ -195,16 +195,16 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
   }
 }
 
-class _SportPickerSheet extends StatefulWidget {
+class SportPickerSheet extends StatefulWidget {
   final SportType initialSport;
 
-  const _SportPickerSheet({required this.initialSport});
+  const SportPickerSheet({required this.initialSport});
 
   @override
-  State<_SportPickerSheet> createState() => _SportPickerSheetState();
+  State<SportPickerSheet> createState() => _SportPickerSheetState();
 }
 
-class _SportPickerSheetState extends State<_SportPickerSheet> {
+class _SportPickerSheetState extends State<SportPickerSheet> {
   late final TextEditingController _searchController;
   List<SportType> _filteredSports = SportType.all;
 
