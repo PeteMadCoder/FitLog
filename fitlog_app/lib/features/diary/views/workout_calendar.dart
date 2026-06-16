@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/diary/providers/diary_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 
 /// A custom calendar widget that displays workouts in a monthly grid.
 class WorkoutCalendar extends ConsumerWidget {
@@ -250,18 +251,7 @@ class _CalendarDayTile extends StatelessWidget {
   }
 
   Color _getSportColor(String sportType) {
-    switch (sportType.toLowerCase()) {
-      case 'running':
-        return Colors.orange;
-      case 'cycling':
-        return Colors.cyan;
-      case 'walking':
-        return Colors.green;
-      case 'hiking':
-        return Colors.brown;
-      default:
-        return Colors.blue;
-    }
+    return SportType.fromId(sportType).color;
   }
 }
 
@@ -316,7 +306,7 @@ class _DayWorkoutsSheet extends StatelessWidget {
                       color: _getSportColor(workout.sportType),
                     ),
                   ),
-                  title: Text(workout.name ?? workout.sportType.toUpperCase()),
+                  title: Text(workout.name ?? SportType.fromId(workout.sportType).name.toUpperCase()),
                   subtitle: Text(
                     '${(workout.distanceMeters / 1000).toStringAsFixed(2)} km • ${_formatDuration(workout.durationSeconds)}',
                   ),
@@ -359,33 +349,11 @@ class _DayWorkoutsSheet extends StatelessWidget {
   }
 
   IconData _getSportIcon(String sportType) {
-    switch (sportType.toLowerCase()) {
-      case 'running':
-        return Icons.directions_run;
-      case 'cycling':
-        return Icons.directions_bike;
-      case 'walking':
-        return Icons.directions_walk;
-      case 'hiking':
-        return Icons.terrain;
-      default:
-        return Icons.fitness_center;
-    }
+    return SportType.fromId(sportType).icon;
   }
 
   Color _getSportColor(String sportType) {
-    switch (sportType.toLowerCase()) {
-      case 'running':
-        return Colors.orange;
-      case 'cycling':
-        return Colors.cyan;
-      case 'walking':
-        return Colors.green;
-      case 'hiking':
-        return Colors.brown;
-      default:
-        return Colors.blue;
-    }
+    return SportType.fromId(sportType).color;
   }
 
   String _formatDuration(double seconds) {

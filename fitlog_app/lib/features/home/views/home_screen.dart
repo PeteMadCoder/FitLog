@@ -4,6 +4,7 @@ import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 
 /// Home Dashboard showing a summary of the last workout and weekly statistics.
 class HomeScreen extends ConsumerWidget {
@@ -109,6 +110,7 @@ class _LastWorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sport = SportType.fromId(workout.sportType);
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -134,12 +136,12 @@ class _LastWorkoutCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: sport.color.withOpacity(0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      _getSportIcon(workout.sportType),
-                      color: theme.colorScheme.onPrimaryContainer,
+                      sport.icon,
+                      color: sport.color,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -148,9 +150,9 @@ class _LastWorkoutCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          workout.sportType.toUpperCase(),
+                          sport.name.toUpperCase(),
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.primary,
+                            color: sport.color,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -194,17 +196,6 @@ class _LastWorkoutCard extends StatelessWidget {
     );
   }
 
-  IconData _getSportIcon(String sportType) {
-    switch (sportType.toLowerCase()) {
-      case 'running':
-        return Icons.directions_run;
-      case 'cycling':
-        return Icons.directions_bike;
-      default:
-        return Icons.fitness_center;
-    }
-  }
-
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
@@ -241,6 +232,7 @@ class _WeeklySportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sportModel = SportType.fromId(sport);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -251,14 +243,14 @@ class _WeeklySportCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(_getSportIcon(sport), color: theme.colorScheme.primary),
+          Icon(sportModel.icon, color: sportModel.color),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  sport.toUpperCase(),
+                  sportModel.name.toUpperCase(),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text('${stats.workoutCount} activities this week'),
@@ -280,16 +272,7 @@ class _WeeklySportCard extends StatelessWidget {
     );
   }
 
-  IconData _getSportIcon(String sportType) {
-    switch (sportType.toLowerCase()) {
-      case 'running':
-        return Icons.directions_run;
-      case 'cycling':
-        return Icons.directions_bike;
-      default:
-        return Icons.fitness_center;
-    }
-  }
+
 
   String _formatDistance(double meters) {
     if (meters >= 1000) {

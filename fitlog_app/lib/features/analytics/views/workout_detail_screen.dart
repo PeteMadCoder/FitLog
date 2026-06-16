@@ -11,6 +11,7 @@ import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
 import 'package:fitlog_app/features/analytics/services/split_calculator.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 
 /// A premium screen presenting the post-workout analysis,
 /// including a static route map, summary metrics, and interactive charts.
@@ -79,7 +80,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         .map((p) => LatLng(p.latitude, p.longitude))
         .toList();
 
-    // Setup dates formatting manually
+    final sport = SportType.fromId(workout.sportType);
     final startFormatted = _formatDateTime(workout.startTime);
 
     return SingleChildScrollView(
@@ -93,14 +94,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.12),
+                  color: sport.color.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  workout.sportType == 'cycling'
-                      ? Icons.directions_bike
-                      : Icons.directions_run,
-                  color: colorScheme.primary,
+                  sport.icon,
+                  color: sport.color,
                   size: 28,
                 ),
               ),
@@ -111,7 +110,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   children: [
                     Text(
                       workout.name ??
-                          '${workout.sportType.toUpperCase()} WORKOUT',
+                          '${sport.name.toUpperCase()} WORKOUT',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,

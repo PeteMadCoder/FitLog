@@ -56,7 +56,7 @@ void main() {
       );
     }
 
-    testWidgets('TrackerScreen renders sport selection in idle state', (
+    testWidgets('TrackerScreen renders sport selection in idle state and supports searchable picker', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(createTestWidget());
@@ -64,8 +64,30 @@ void main() {
 
       expect(find.text('Start Workout'), findsOneWidget);
       expect(find.text('START WORKOUT'), findsOneWidget);
-      expect(find.text('Run'), findsOneWidget);
-      expect(find.text('Ride'), findsOneWidget);
+      
+      // Default sport is 'Running'
+      expect(find.text('Running'), findsOneWidget);
+      expect(find.text('Tap to change sport'), findsOneWidget);
+
+      // Open bottom sheet sport picker
+      await tester.tap(find.text('Tap to change sport'));
+      await tester.pumpAndSettle();
+
+      // Check bottom sheet elements
+      expect(find.text('Select Sport'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // Search for "cycling"
+      await tester.enterText(find.byType(TextField), 'cycling');
+      await tester.pumpAndSettle();
+
+      // Tap the Cycling tile in the search results
+      await tester.tap(find.text('Cycling').first);
+      await tester.pumpAndSettle();
+
+      // Bottom sheet should be dismissed, and selection updated
+      expect(find.text('Select Sport'), findsNothing);
+      expect(find.text('Cycling'), findsOneWidget);
     });
 
     testWidgets(

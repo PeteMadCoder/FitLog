@@ -6,6 +6,7 @@ import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
 import 'package:fitlog_app/features/tracking/widgets/workout_metrics_widgets.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 
 /// Screen displayed during an active workout session.
 /// Renders a live map, routes breadcrumbs, real-time metrics, and pause/resume/stop controls.
@@ -37,6 +38,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget build(BuildContext context) {
     final trackingState = ref.watch(trackingNotifierProvider);
     final gpsPoints = trackingState.gpsPoints;
+    final sport = SportType.fromId(trackingState.sportType);
 
     // Map list of GpsPoints into LatLng coordinates
     final List<LatLng> routePoints = gpsPoints
@@ -141,15 +143,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        trackingState.sportType == 'cycling'
-                            ? Icons.directions_bike
-                            : Icons.directions_run,
-                        color: Theme.of(context).colorScheme.primary,
+                        sport.icon,
+                        color: sport.color,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${trackingState.sportType.toUpperCase()} • ${trackingState.status.name.toUpperCase()}',
+                        '${sport.name.toUpperCase()} • ${trackingState.status.name.toUpperCase()}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

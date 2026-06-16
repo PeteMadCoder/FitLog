@@ -6,6 +6,7 @@ import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
 import 'package:fitlog_app/features/diary/views/workout_calendar.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 
 /// Screen displaying a chronological list or calendar of all recorded workout sessions.
 class DiaryScreen extends ConsumerWidget {
@@ -111,37 +112,11 @@ class DiaryScreen extends ConsumerWidget {
     final duration = Duration(seconds: workout.durationSeconds.toInt());
     final distanceKm = workout.distanceMeters / 1000.0;
 
-    // Choose icon and colors based on sport type
-    IconData sportIcon;
-    Color iconColor;
-    Color iconBgColor;
-
-    switch (workout.sportType.toLowerCase()) {
-      case 'running':
-        sportIcon = Icons.directions_run;
-        iconColor = Colors.orange.shade700;
-        iconBgColor = Colors.orange.shade100;
-        break;
-      case 'cycling':
-        sportIcon = Icons.directions_bike;
-        iconColor = Colors.cyan.shade700;
-        iconBgColor = Colors.cyan.shade100;
-        break;
-      case 'walking':
-        sportIcon = Icons.directions_walk;
-        iconColor = Colors.green.shade700;
-        iconBgColor = Colors.green.shade100;
-        break;
-      case 'hiking':
-        sportIcon = Icons.terrain;
-        iconColor = Colors.brown.shade700;
-        iconBgColor = Colors.brown.shade100;
-        break;
-      default:
-        sportIcon = Icons.fitness_center;
-        iconColor = colorScheme.primary;
-        iconBgColor = colorScheme.primaryContainer;
-    }
+    // Choose icon and colors dynamically from sport type model
+    final sport = SportType.fromId(workout.sportType);
+    final sportIcon = sport.icon;
+    final iconColor = sport.color;
+    Color iconBgColor = sport.color.withOpacity(0.12);
 
     if (theme.brightness == Brightness.dark) {
       iconBgColor = iconColor.withOpacity(0.2);
@@ -210,7 +185,7 @@ class DiaryScreen extends ConsumerWidget {
                   children: [
                     Text(
                       workout.name ??
-                          '${workout.sportType.toUpperCase()} WORKOUT',
+                          '${sport.name.toUpperCase()} WORKOUT',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
