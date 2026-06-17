@@ -20,11 +20,13 @@ class FakeSettingsState extends SettingsState {
     String? gender,
     double? height,
     double? weight,
+    double? weeklyGoalHours,
   }) async {
     _value = _value.copyWith(
       gender: gender,
       height: height,
       weight: weight,
+      weeklyGoalHours: weeklyGoalHours,
     );
     state = AsyncValue.data(_value);
   }
@@ -36,6 +38,7 @@ void main() {
       gender: 'Male',
       height: 175.0,
       weight: 70.0,
+      weeklyGoalHours: 5.0,
     );
 
     final fakeNotifier = FakeSettingsState(initialSettings);
@@ -59,6 +62,8 @@ void main() {
     expect(find.text('Male'), findsOneWidget);
     expect(find.text('175.0'), findsOneWidget);
     expect(find.text('70.0'), findsOneWidget);
+    expect(find.text('5.0'), findsOneWidget);
+    expect(find.text('Weekly Goal (hours)'), findsOneWidget);
 
     // 2. Verify Backup section is visible
     expect(find.text('Data Management & Backup'), findsOneWidget);
@@ -103,6 +108,7 @@ void main() {
     // Change height and weight to valid values
     await tester.enterText(find.widgetWithText(TextFormField, 'Height (cm)'), '182.5');
     await tester.enterText(find.widgetWithText(TextFormField, 'Weight (kg)'), '79.3');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Weekly Goal (hours)'), '8.5');
     await tester.tap(find.text('Save Profile'));
     await tester.pumpAndSettle();
 
@@ -113,5 +119,6 @@ void main() {
     final updated = await fakeNotifier.future;
     expect(updated.height, equals(182.5));
     expect(updated.weight, equals(79.3));
+    expect(updated.weeklyGoalHours, equals(8.5));
   });
 }

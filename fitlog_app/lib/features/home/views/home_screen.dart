@@ -15,6 +15,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lastWorkoutAsync = ref.watch(latestWorkoutProvider);
     final weeklySummaryAsync = ref.watch(weeklyActivitySummaryProvider);
+    final goalProgressAsync = ref.watch(weeklyGoalProgressProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -32,6 +33,14 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSectionTitle(context, 'Weekly Goal'),
+              const SizedBox(height: 12),
+              goalProgressAsync.when(
+                data: (progress) => _WeeklyGoalCard(progress: progress),
+                loading: () => const _LoadingPlaceholder(height: 100),
+                error: (e, _) => _buildErrorState(context, e.toString()),
+              ),
+              const SizedBox(height: 32),
               _buildSectionTitle(context, 'Last Workout'),
               const SizedBox(height: 12),
               lastWorkoutAsync.when(
@@ -100,6 +109,120 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildErrorState(BuildContext context, String error) {
     return Center(child: Text('Error: $error'));
+  }
+}
+
+class _WeeklyGoalCard extends StatelessWidget {
+  final WeeklyGoalProgress progress;
+
+  const _WeeklyGoalCard({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    if (progress.goalHours <= 0) {
+      return InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'No weekly goal set',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Tap to set a weekly activity goal',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Goal: ${progress.goalHours.toStringAsFixed(1)} hours',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${progress.completedWeeksCount} weeks achieved',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${(progress.progressPercentage * 100).toStringAsFixed(0)}%',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: progress.isGoalMet ? Colors.green : theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress.progressPercentage,
+                minHeight: 12,
+                backgroundColor: theme.colorScheme.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  progress.isGoalMet ? Colors.green : theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${progress.currentWeekHours.toStringAsFixed(1)} / ${progress.goalHours.toStringAsFixed(1)} hours this week',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

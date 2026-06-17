@@ -79,11 +79,13 @@ class FakeSettingsState extends SettingsState {
     String? gender,
     double? height,
     double? weight,
+    double? weeklyGoalHours,
   }) async {
     _value = _value.copyWith(
       gender: gender,
       height: height,
       weight: weight,
+      weeklyGoalHours: weeklyGoalHours,
     );
     state = AsyncValue.data(_value);
   }

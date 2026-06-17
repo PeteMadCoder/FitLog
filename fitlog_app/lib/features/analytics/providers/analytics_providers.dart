@@ -4,6 +4,7 @@ import 'package:fitlog_app/app/app_providers.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/models/sensor_data.dart';
+import 'package:fitlog_app/features/settings/providers/settings_provider.dart';
 
 part 'analytics_providers.g.dart';
 
@@ -206,4 +207,92 @@ Stream<WeeklyActivitySummary> weeklyActivitySummary(
 
         return WeeklyActivitySummary(statsBySport: statsBySport);
       });
+}
+
+/// State class for weekly goal progress.
+class WeeklyGoalProgress {
+  final double goalHours;
+  final double currentWeekHours;
+  final int completedWeeksCount;
+
+  WeeklyGoalProgress({
+    required this.goalHours,
+    required this.currentWeekHours,
+    required this.completedWeeksCount,
+  });
+
+  double get progressPercentage => goalHours > 0 ? (currentWeekHours / goalHours).clamp(0.0, 1.0) : 0.0;
+  bool get isGoalMet => currentWeekHours >= goalHours && goalHours > 0;
+}
+
+/// Provider exposing the weekly goal progress.
+@riverpod
+Stream<WeeklyGoalProgress> weeklyGoalProgress(WeeklyGoalProgressRef ref) async* {
+  final isar = await ref.watch(isarProvider.future);
+  final settings = await ref.watch(settingsStateProvider.future);
+  final goalHours = settings.weeklyGoalHours ?? 0.0;
+
+  yield* isar.workouts.where().sortByStartTimeDesc().watch(fireImmediately: true).map((workouts) {
+    return calculateWeeklyGoalProgress(
+      workouts: workouts,
+      goalHours: goalHours,
+      now: DateTime.now(),
+    );
+  });
+}
+
+WeeklyGoalProgress calculateWeeklyGoalProgress({
+  required List<Workout> workouts,
+  required double goalHours,
+  required DateTime now,
+}) {
+  if (workouts.isEmpty) {
+    return WeeklyGoalProgress(
+      goalHours: goalHours,
+      currentWeekHours: 0.0,
+      completedWeeksCount: 0,
+    );
+  }
+
+  // Monday of current week
+  final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
+  final startOfCurrentWeek = DateTime(currentWeekStart.year, currentWeekStart.month, currentWeekStart.day);
+
+  double currentWeekSeconds = 0;
+  
+  // Map of week identifier (year-weekNumber) to total duration in seconds
+  final Map<String, double> weeklyDurations = {};
+
+  for (final workout in workouts) {
+    if (workout.startTime.isAfter(startOfCurrentWeek) || workout.startTime.isAtSameMomentAs(startOfCurrentWeek)) {
+      currentWeekSeconds += workout.durationSeconds;
+    }
+
+    // Group by week for historical count
+    final weekId = _getWeekId(workout.startTime);
+    weeklyDurations[weekId] = (weeklyDurations[weekId] ?? 0) + workout.durationSeconds;
+  }
+
+  int completedWeeks = 0;
+
+  weeklyDurations.forEach((weekId, durationSecs) {
+    if (durationSecs >= goalHours * 3600 && goalHours > 0) {
+      completedWeeks++;
+    }
+  });
+
+  return WeeklyGoalProgress(
+    goalHours: goalHours,
+    currentWeekHours: currentWeekSeconds / 3600.0,
+    completedWeeksCount: completedWeeks,
+  );
+}
+
+String _getWeekId(DateTime date) {
+  // Simple week ID: Year-WeekNumber
+  // We can use a more robust way if needed, but for streaks/counts this should suffice
+  // weekNumber = (days since start of year) / 7
+  final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
+  final weekNumber = (dayOfYear / 7).floor();
+  return '${date.year}-$weekNumber';
 }

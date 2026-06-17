@@ -30,12 +30,14 @@ class SettingsState extends _$SettingsState {
     String? gender,
     double? height,
     double? weight,
+    double? weeklyGoalHours,
   }) async {
     final current = state.value ?? UserSettings();
     final updated = current.copyWith(
       gender: gender,
       height: height,
       weight: weight,
+      weeklyGoalHours: weeklyGoalHours,
     );
     state = AsyncValue.data(updated);
 

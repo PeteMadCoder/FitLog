@@ -20,6 +20,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _heightController;
   late TextEditingController _weightController;
+  late TextEditingController _weeklyGoalController;
   String? _gender;
   bool _initialized = false;
   bool _isSaving = false;
@@ -30,12 +31,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.initState();
     _heightController = TextEditingController();
     _weightController = TextEditingController();
+    _weeklyGoalController = TextEditingController();
   }
 
   @override
   void dispose() {
     _heightController.dispose();
     _weightController.dispose();
+    _weeklyGoalController.dispose();
     super.dispose();
   }
 
@@ -48,12 +51,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final height = double.tryParse(_heightController.text);
     final weight = double.tryParse(_weightController.text);
+    final weeklyGoal = double.tryParse(_weeklyGoalController.text);
 
     try {
       await ref.read(settingsStateProvider.notifier).updateSettings(
             gender: _gender,
             height: height,
             weight: weight,
+            weeklyGoalHours: weeklyGoal,
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -384,6 +389,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _gender = settings.gender;
                 _heightController.text = settings.height?.toString() ?? '';
                 _weightController.text = settings.weight?.toString() ?? '';
+                _weeklyGoalController.text = settings.weeklyGoalHours?.toString() ?? '';
                 _initialized = true;
               }
               return SingleChildScrollView(
@@ -514,6 +520,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   final val = double.tryParse(value);
                   if (val == null || val <= 0) {
                     return 'Please enter a valid weight';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Weekly Goal Field
+              TextFormField(
+                controller: _weeklyGoalController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Weekly Goal (hours)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.timer_outlined),
+                  helperText: 'How many hours of activity per week?',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return null;
+                  final val = double.tryParse(value);
+                  if (val == null || val < 0) {
+                    return 'Please enter a valid number of hours';
                   }
                   return null;
                 },
@@ -679,7 +706,6 @@ class _WorkoutImportPreviewDialogState extends ConsumerState<_WorkoutImportPrevi
   @override
   Widget build(BuildContext context) {
     final workout = widget.initialWorkout.workout;
-    final theme = Theme.of(context);
     final distanceKm = (workout.distanceMeters / 1000).toStringAsFixed(2);
     
     final duration = Duration(seconds: workout.durationSeconds.toInt());

@@ -228,6 +228,26 @@ final weeklyActivitySummaryProvider =
 
 typedef WeeklyActivitySummaryRef
     = AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
+String _$weeklyGoalProgressHash() =>
+    r'e9be55291ae742ab7dec7f6a846ef7251cbf3841';
+
+/// Provider exposing the weekly goal progress.
+///
+/// Copied from [weeklyGoalProgress].
+@ProviderFor(weeklyGoalProgress)
+final weeklyGoalProgressProvider =
+    AutoDisposeStreamProvider<WeeklyGoalProgress>.internal(
+  weeklyGoalProgress,
+  name: r'weeklyGoalProgressProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$weeklyGoalProgressHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef WeeklyGoalProgressRef
+    = AutoDisposeStreamProviderRef<WeeklyGoalProgress>;
 String _$workoutEditorHash() => r'9bd8f02a9e680612e545eb94006723b1d8c10f87';
 
 /// Notifier to handle editing and deleting workouts.
