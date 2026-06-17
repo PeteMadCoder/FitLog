@@ -185,7 +185,7 @@ class _WeeklyGoalCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      '${progress.completedWeeksCount} weeks achieved',
+                      '${progress.streakCount} week streak!',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
