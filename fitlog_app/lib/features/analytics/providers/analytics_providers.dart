@@ -47,11 +47,17 @@ class WorkoutEditor extends _$WorkoutEditor {
     await isar.writeTxn(() async {
       final workout = await isar.workouts.get(id);
       if (workout != null) {
+        if (workout.gpsPoints.isAttached) {
+          await workout.gpsPoints.load();
+        }
+        if (workout.sensorData.isAttached) {
+          await workout.sensorData.load();
+        }
         final gpsIds = workout.gpsPoints.map((p) => p.id).toList();
         final sensorIds = workout.sensorData.map((s) => s.id).toList();
         
-        await isar.collection<GpsPoint>().deleteAll(gpsIds);
-        await isar.collection<SensorData>().deleteAll(sensorIds);
+        await isar.gpsPoints.deleteAll(gpsIds);
+        await isar.sensorDatas.deleteAll(sensorIds);
         await isar.workouts.delete(id);
       }
     });

@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/widgets/metric_card.dart';
@@ -12,6 +15,7 @@ import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/core/utils/pace_calculator.dart';
 import 'package:fitlog_app/features/analytics/services/split_calculator.dart';
 import 'package:fitlog_app/features/tracking/models/sport_type.dart';
+import 'package:fitlog_app/features/backup/services/gpx_export_service.dart';
 
 /// A premium screen presenting the post-workout analysis,
 /// including a static route map, summary metrics, and interactive charts.
@@ -41,6 +45,17 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: theme.colorScheme.onSurface,
         actions: [
+          workoutAsync.when(
+            data: (workout) => workout != null
+                ? IconButton(
+                    icon: const Icon(Icons.share_outlined),
+                    onPressed: () => _exportWorkout(context, workout),
+                    tooltip: 'Export GPX',
+                  )
+                : const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => _showEditNameDialog(context),
@@ -980,5 +995,38 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportWorkout(BuildContext context, Workout workout) async {
+    try {
+      final gpxString = await ref
+          .read(gpxExportServiceProvider.notifier)
+          .exportToGpx(workout);
+      final bytes = Uint8List.fromList(utf8.encode(gpxString));
+
+      final fileName =
+          '${workout.name?.replaceAll(' ', '_') ?? 'workout'}_${workout.startTime.millisecondsSinceEpoch}.gpx';
+
+      final result = await FilePicker.saveFile(
+        dialogTitle: 'Save GPX File',
+        fileName: fileName,
+        bytes: bytes,
+      );
+
+      if (result != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved to $result')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
