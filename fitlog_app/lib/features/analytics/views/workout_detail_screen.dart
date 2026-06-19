@@ -32,6 +32,7 @@ class WorkoutDetailScreen extends ConsumerStatefulWidget {
 class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   int _selectedChartIndex = 0; // 0 for Elevation, 1 for Speed, 2 for Pace
   int? _selectedSpotIndex;
+  double _selectedLapDistance = 1000.0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +55,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   )
                 : const SizedBox.shrink(),
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -305,13 +306,36 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
           const SizedBox(height: 16),
           _buildChartsSection(context, gpsPoints),
           const SizedBox(height: 32),
-          const Text(
-            'LAP SPLITS (1KM)',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'LAP SPLITS',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              SegmentedButton<double>(
+                segments: const [
+                  ButtonSegment(value: 1000.0, label: Text('1km')),
+                  ButtonSegment(value: 5000.0, label: Text('5km')),
+                  ButtonSegment(value: 10000.0, label: Text('10km')),
+                ],
+                selected: {_selectedLapDistance},
+                onSelectionChanged: (set) {
+                  setState(() {
+                    _selectedLapDistance = set.first;
+                  });
+                },
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           _buildLapsTable(context, gpsPoints),
@@ -725,7 +749,10 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final gpsPoints = List<GpsPoint>.from(gpsPointsList);
-    final splits = SplitCalculator.calculateSplits(gpsPoints);
+    final splits = SplitCalculator.calculateSplits(
+      gpsPoints,
+      splitTargetDistance: _selectedLapDistance,
+    );
 
     if (splits.isEmpty) {
       return Container(
@@ -813,7 +840,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   Expanded(
                     flex: 3,
                     child: Text(
-                      'AVG PACE',
+                      'AVG SPEED',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -888,7 +915,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                       Expanded(
                         flex: 3,
                         child: Text(
-                          '${PaceCalculator.formatPace(split.averagePaceMinPerKm)}/km',
+                          '${split.averageSpeedKmH.toStringAsFixed(1)} km/h',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,

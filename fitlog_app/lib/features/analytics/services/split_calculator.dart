@@ -22,13 +22,16 @@ class Split {
     final minutes = duration.inSeconds / 60.0;
     return minutes / distanceKm;
   }
+
+  /// Returns the average speed in km/h.
+  double get averageSpeedKmH => averageSpeed * 3.6;
 }
 
 /// Service responsible for analyzing telemetry data and calculating splits.
 class SplitCalculator {
-  /// Automatically calculates 1km splits from a list of GpsPoints.
+  /// Automatically calculates splits from a list of GpsPoints.
   /// Interpolates boundary crossings for precise duration estimations.
-  static List<Split> calculateSplits(List<GpsPoint> points) {
+  static List<Split> calculateSplits(List<GpsPoint> points, {double splitTargetDistance = 1000.0}) {
     if (points.length < 2) return [];
 
     // Ensure points are sorted chronologically
@@ -41,7 +44,6 @@ class SplitCalculator {
     DateTime lastBoundaryTime = sortedPoints.first.timestamp;
 
     int splitIndex = 1;
-    const splitTargetDistance = 1000.0; // 1km in meters
 
     for (int i = 1; i < sortedPoints.length; i++) {
       final prev = sortedPoints[i - 1];

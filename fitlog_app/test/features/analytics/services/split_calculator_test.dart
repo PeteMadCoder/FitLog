@@ -84,5 +84,45 @@ void main() {
       // Remaining duration is 5 min - 4 min 15 sec = 45 sec.
       expect(splits[2].duration.inSeconds, closeTo(45.0, 5.0));
     });
+
+    test('calculates 5km splits correctly', () {
+      final now = DateTime(2026, 6, 14, 10, 0);
+
+      // We will place points along the equator (0 lat)
+      // 0.008983 degrees longitude at the equator is approx 1000 meters.
+      // 12km total
+      final points = List.generate(13, (i) {
+        return GpsPoint()
+          ..latitude = 0.0
+          ..longitude = i * 0.008983
+          ..timestamp = now.add(Duration(minutes: i * 5)); // 5 min per km
+      });
+
+      final splits = SplitCalculator.calculateSplits(points, splitTargetDistance: 5000.0);
+
+      // Total 12km.
+      // Split 1: 5km
+      // Split 2: 5km
+      // Split 3 (partial): 2km
+      expect(splits.length, equals(3));
+      expect(splits[0].distanceMeters, equals(5000.0));
+      expect(splits[0].duration.inMinutes, equals(25));
+      expect(splits[1].distanceMeters, equals(5000.0));
+      expect(splits[1].duration.inMinutes, equals(25));
+      expect(splits[2].distanceMeters, closeTo(2000.0, 20.0));
+      expect(splits[2].duration.inSeconds, closeTo(600, 10));
+    });
+  });
+
+  group('Split Tests', () {
+    test('averageSpeedKmH returns correct value', () {
+      const split = Split(
+        index: 1,
+        distanceMeters: 1000,
+        duration: Duration(minutes: 5),
+        averageSpeed: 3.3333333333333335, // 1000m / 300s
+      );
+      expect(split.averageSpeedKmH, closeTo(12.0, 0.1));
+    });
   });
 }
