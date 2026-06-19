@@ -6,7 +6,7 @@ part of 'gpx_export_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gpxExportServiceHash() => r'f8a73129e0438f79ad885f7cb605e17a1622ca0f';
+String _$gpxExportServiceHash() => r'e0a2e2bd007388958c7e4690b9ca55cbc110c6dc';
 
 /// Service responsible for exporting [Workout] data to GPX format.
 ///

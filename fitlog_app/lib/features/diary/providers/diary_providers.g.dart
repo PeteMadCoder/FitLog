@@ -14,14 +14,14 @@ String _$workoutHistoryHash() => r'00f2fe758c4e2da91bcf07f05075615fd16ba21f';
 @ProviderFor(workoutHistory)
 final workoutHistoryProvider =
     AutoDisposeStreamProvider<List<Workout>>.internal(
-      workoutHistory,
-      name: r'workoutHistoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$workoutHistoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  workoutHistory,
+  name: r'workoutHistoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$workoutHistoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef WorkoutHistoryRef = AutoDisposeStreamProviderRef<List<Workout>>;
 String _$workoutsByMonthHash() => r'89237b545c09ee8f8ec866e25809a6ac637acb9c';
@@ -65,15 +65,21 @@ class WorkoutsByMonthFamily extends Family<AsyncValue<List<Workout>>> {
   /// Provider exposing workouts for a specific month.
   ///
   /// Copied from [workoutsByMonth].
-  WorkoutsByMonthProvider call(DateTime month) {
-    return WorkoutsByMonthProvider(month);
+  WorkoutsByMonthProvider call(
+    DateTime month,
+  ) {
+    return WorkoutsByMonthProvider(
+      month,
+    );
   }
 
   @override
   WorkoutsByMonthProvider getProviderOverride(
     covariant WorkoutsByMonthProvider provider,
   ) {
-    return call(provider.month);
+    return call(
+      provider.month,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -98,19 +104,24 @@ class WorkoutsByMonthProvider extends AutoDisposeStreamProvider<List<Workout>> {
   /// Provider exposing workouts for a specific month.
   ///
   /// Copied from [workoutsByMonth].
-  WorkoutsByMonthProvider(DateTime month)
-    : this._internal(
-        (ref) => workoutsByMonth(ref as WorkoutsByMonthRef, month),
-        from: workoutsByMonthProvider,
-        name: r'workoutsByMonthProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$workoutsByMonthHash,
-        dependencies: WorkoutsByMonthFamily._dependencies,
-        allTransitiveDependencies:
-            WorkoutsByMonthFamily._allTransitiveDependencies,
-        month: month,
-      );
+  WorkoutsByMonthProvider(
+    DateTime month,
+  ) : this._internal(
+          (ref) => workoutsByMonth(
+            ref as WorkoutsByMonthRef,
+            month,
+          ),
+          from: workoutsByMonthProvider,
+          name: r'workoutsByMonthProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$workoutsByMonthHash,
+          dependencies: WorkoutsByMonthFamily._dependencies,
+          allTransitiveDependencies:
+              WorkoutsByMonthFamily._allTransitiveDependencies,
+          month: month,
+        );
 
   WorkoutsByMonthProvider._internal(
     super._createNotifier, {
@@ -183,14 +194,14 @@ String _$calendarMonthHash() => r'9bddad347bd76603d67736cd6ee9e476677830e6';
 @ProviderFor(CalendarMonth)
 final calendarMonthProvider =
     AutoDisposeNotifierProvider<CalendarMonth, DateTime>.internal(
-      CalendarMonth.new,
-      name: r'calendarMonthProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$calendarMonthHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  CalendarMonth.new,
+  name: r'calendarMonthProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$calendarMonthHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$CalendarMonth = AutoDisposeNotifier<DateTime>;
 String _$diaryViewModeHash() => r'084e8e28a7a694755eec8611ee7d04326b84d0c0';
@@ -201,14 +212,14 @@ String _$diaryViewModeHash() => r'084e8e28a7a694755eec8611ee7d04326b84d0c0';
 @ProviderFor(DiaryViewMode)
 final diaryViewModeProvider =
     AutoDisposeNotifierProvider<DiaryViewMode, bool>.internal(
-      DiaryViewMode.new,
-      name: r'diaryViewModeProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$diaryViewModeHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  DiaryViewMode.new,
+  name: r'diaryViewModeProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$diaryViewModeHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$DiaryViewMode = AutoDisposeNotifier<bool>;
 // ignore_for_file: type=lint

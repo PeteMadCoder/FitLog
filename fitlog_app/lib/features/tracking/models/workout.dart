@@ -26,6 +26,7 @@ class Workout {
   double? calories;
 
   bool isCompleted = false;
+  bool isPaused = false;
 
   /// Breadcrumb path for the workout.
   final gpsPoints = IsarLinks<GpsPoint>();

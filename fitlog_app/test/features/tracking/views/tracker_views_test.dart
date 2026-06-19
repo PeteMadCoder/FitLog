@@ -6,6 +6,10 @@ import 'package:fitlog_app/features/tracking/views/active_workout_screen.dart';
 import 'package:fitlog_app/features/tracking/services/gps_service.dart';
 import 'package:fitlog_app/core/permissions/permission_service.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
+import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/tracking/models/sensor_data.dart';
+import 'package:fitlog_app/app/app_providers.dart';
+import 'package:isar/isar.dart';
 
 // Mock implementations for testing views
 class FakePermissionService implements PermissionService {
@@ -27,6 +31,9 @@ class FakePermissionService implements PermissionService {
 
 class FakeGpsService implements GpsService {
   @override
+  Future<Workout?> getActiveWorkout(Isar isar) async => null;
+
+  @override
   Future<void> configureGpsSettings() async {}
   @override
   Future<bool> enableBackgroundMode() async => true;
@@ -36,14 +43,138 @@ class FakeGpsService implements GpsService {
   Stream<GpsPoint> getGpsPointStream() => const Stream<GpsPoint>.empty();
 }
 
+class FakeIsar extends Fake implements Isar {
+  final collections = <Type, FakeIsarCollection<dynamic>>{};
+
+  @override
+  Future<T> writeTxn<T>(Future<T> Function() callback, {bool silent = false}) {
+    return callback();
+  }
+
+  @override
+  IsarCollection<T> collection<T>() {
+    return collections.putIfAbsent(T, () => FakeIsarCollection<T>())
+        as IsarCollection<T>;
+  }
+}
+
+class FakeIsarCollection<T> extends Fake implements IsarCollection<T> {
+  final List<T> items = [];
+
+  @override
+  Future<List<Id>> putAll(List<T> objects) async {
+    final List<Id> ids = [];
+    for (final obj in objects) {
+      ids.add(await put(obj));
+    }
+    return ids;
+  }
+
+  @override
+  Future<Id> put(T object) async {
+    int? existingId;
+    if (object is Workout) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    } else if (object is GpsPoint) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    } else if (object is SensorData) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    }
+
+    if (existingId != null) {
+      final idx = items.indexWhere((item) {
+        if (item is Workout && item.id == existingId) return true;
+        if (item is GpsPoint && item.id == existingId) return true;
+        if (item is SensorData && item.id == existingId) return true;
+        return false;
+      });
+      if (idx != -1) {
+        items[idx] = object;
+        return existingId;
+      }
+    }
+
+    final int nextId = items.length + 1;
+    if (object is Workout) {
+      object.id = nextId;
+    } else if (object is GpsPoint) {
+      object.id = nextId;
+    } else if (object is SensorData) {
+      object.id = nextId;
+    }
+    items.add(object);
+    return nextId;
+  }
+
+  @override
+  Future<T?> get(Id id) async {
+    for (final item in items) {
+      if (item is Workout && item.id == id) {
+        return item as T;
+      } else if (item is GpsPoint && item.id == id) {
+        return item as T;
+      } else if (item is SensorData && item.id == id) {
+        return item as T;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<bool> delete(Id id) async {
+    final initialLength = items.length;
+    items.removeWhere((item) {
+      if (item is Workout && item.id == id) return true;
+      if (item is GpsPoint && item.id == id) return true;
+      if (item is SensorData && item.id == id) return true;
+      return false;
+    });
+    return items.length < initialLength;
+  }
+
+  @override
+  QueryBuilder<T, T, QFilterCondition> filter() {
+    return FakeQueryBuilder<T>(this) as QueryBuilder<T, T, QFilterCondition>;
+  }
+}
+
+class FakeQueryBuilder<T> extends Fake implements QueryBuilder<T, T, QFilterCondition> {
+  final FakeIsarCollection<T> collection;
+  FakeQueryBuilder(this.collection);
+
+  FakeQueryBuilder<T> isCompletedEqualTo(bool value) {
+    return this;
+  }
+
+  Future<T?> findFirst() async {
+    if (T == Workout) {
+      final list = collection.items as List<Workout>;
+      final index = list.indexWhere((w) => !w.isCompleted);
+      if (index != -1) {
+        return list[index] as T?;
+      }
+      return null;
+    }
+    return collection.items.isNotEmpty ? collection.items.first : null;
+  }
+}
+
 void main() {
   group('Tracker Views Widget Tests', () {
     late FakePermissionService fakePermission;
     late FakeGpsService fakeGps;
+    late FakeIsar fakeIsar;
 
     setUp(() {
       fakePermission = FakePermissionService();
       fakeGps = FakeGpsService();
+      fakeIsar = FakeIsar();
     });
 
     Widget createTestWidget() {
@@ -51,6 +182,7 @@ void main() {
         overrides: [
           permissionServiceProvider.overrideWithValue(fakePermission),
           gpsServiceProvider.overrideWithValue(fakeGps),
+          isarProvider.overrideWith((ref) => fakeIsar),
         ],
         child: const MaterialApp(home: TrackerScreen()),
       );

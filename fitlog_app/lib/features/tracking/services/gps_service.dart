@@ -1,6 +1,8 @@
+import 'package:isar/isar.dart';
 import 'package:location/location.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
+import 'package:fitlog_app/features/tracking/models/workout.dart';
 
 part 'gps_service.g.dart';
 
@@ -10,6 +12,11 @@ class GpsService {
   final Location _location;
 
   GpsService({Location? location}) : _location = location ?? Location();
+
+  /// Retrieves any active, uncompleted workout from the Isar database.
+  Future<Workout?> getActiveWorkout(Isar isar) async {
+    return await isar.workouts.filter().isCompletedEqualTo(false).findFirst();
+  }
 
   /// Configures the GPS tracking settings to request high-accuracy data
   /// and stream updates every 1 second or every 5 meters.

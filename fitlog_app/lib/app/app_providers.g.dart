@@ -15,9 +15,8 @@ String _$isarHash() => r'047b349018d4de736936045374d488f8d698ea53';
 final isarProvider = AutoDisposeFutureProvider<Isar>.internal(
   isar,
   name: r'isarProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$isarHash,
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$isarHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -31,14 +30,14 @@ String _$navigationIndexHash() => r'd414893e1ca6a80fb2253812d81d3fbffa99ea74';
 @ProviderFor(NavigationIndex)
 final navigationIndexProvider =
     AutoDisposeNotifierProvider<NavigationIndex, int>.internal(
-      NavigationIndex.new,
-      name: r'navigationIndexProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$navigationIndexHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  NavigationIndex.new,
+  name: r'navigationIndexProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$navigationIndexHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$NavigationIndex = AutoDisposeNotifier<int>;
 // ignore_for_file: type=lint

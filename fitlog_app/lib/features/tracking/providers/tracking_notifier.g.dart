@@ -6,7 +6,7 @@ part of 'tracking_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$trackingNotifierHash() => r'976a99e4d7d8ca4e2908510d921f7774350a9a5b';
+String _$trackingNotifierHash() => r'c68fa13b7498bce890bb54c4a2c6c2a3cec9cc47';
 
 /// Notifier responsible for managing the active tracking session state
 /// and processing real-time telemetry coordinates.

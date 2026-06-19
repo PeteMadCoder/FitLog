@@ -6,6 +6,7 @@ import 'package:fitlog_app/core/permissions/permission_service.dart';
 import 'package:fitlog_app/features/tracking/services/gps_service.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/tracking/models/sensor_data.dart';
 import 'package:fitlog_app/app/app_providers.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
@@ -44,9 +45,23 @@ class FakePermissionService implements PermissionService {
 class FakeGpsService implements GpsService {
   final _controller = StreamController<GpsPoint>.broadcast();
   bool backgroundModeEnabled = false;
+  Workout? activeWorkout;
 
   void emitPoint(GpsPoint point) {
     _controller.add(point);
+  }
+
+  @override
+  Future<Workout?> getActiveWorkout(Isar isar) async {
+    if (activeWorkout != null) return activeWorkout;
+    try {
+      final collection = isar.collection<Workout>() as FakeIsarCollection<Workout>;
+      final index = collection.items.indexWhere((w) => !w.isCompleted);
+      if (index != -1) {
+        return collection.items[index];
+      }
+    } catch (_) {}
+    return null;
   }
 
   @override
@@ -88,15 +103,148 @@ class FakeIsarCollection<T> extends Fake implements IsarCollection<T> {
 
   @override
   Future<List<Id>> putAll(List<T> objects) async {
-    items.addAll(objects);
-    return List.generate(objects.length, (index) => index);
+    final List<Id> ids = [];
+    for (final obj in objects) {
+      ids.add(await put(obj));
+    }
+    return ids;
   }
 
   @override
   Future<Id> put(T object) async {
+    int? existingId;
+    if (object is Workout) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    } else if (object is GpsPoint) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    } else if (object is SensorData) {
+      if (object.id != Isar.autoIncrement && object.id > 0) {
+        existingId = object.id;
+      }
+    }
+
+    if (existingId != null) {
+      final idx = items.indexWhere((item) {
+        if (item is Workout && item.id == existingId) return true;
+        if (item is GpsPoint && item.id == existingId) return true;
+        if (item is SensorData && item.id == existingId) return true;
+        return false;
+      });
+      if (idx != -1) {
+        items[idx] = object;
+        return existingId;
+      }
+    }
+
+    final int nextId = items.length + 1;
+    if (object is Workout) {
+      object.id = nextId;
+    } else if (object is GpsPoint) {
+      object.id = nextId;
+    } else if (object is SensorData) {
+      object.id = nextId;
+    }
     items.add(object);
-    return items.length - 1;
+    return nextId;
   }
+
+  @override
+  Future<T?> get(Id id) async {
+    for (final item in items) {
+      if (item is Workout && item.id == id) {
+        return item as T;
+      } else if (item is GpsPoint && item.id == id) {
+        return item as T;
+      } else if (item is SensorData && item.id == id) {
+        return item as T;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<bool> delete(Id id) async {
+    final initialLength = items.length;
+    items.removeWhere((item) {
+      if (item is Workout && item.id == id) return true;
+      if (item is GpsPoint && item.id == id) return true;
+      if (item is SensorData && item.id == id) return true;
+      return false;
+    });
+    return items.length < initialLength;
+  }
+
+  @override
+  QueryBuilder<T, T, QFilterCondition> filter() {
+    return FakeQueryBuilder<T>(this) as QueryBuilder<T, T, QFilterCondition>;
+  }
+}
+
+class FakeQueryBuilder<T> extends Fake implements QueryBuilder<T, T, QFilterCondition> {
+  final FakeIsarCollection<T> collection;
+  FakeQueryBuilder(this.collection);
+
+  FakeQueryBuilder<T> isCompletedEqualTo(bool value) {
+    return this;
+  }
+
+  Future<T?> findFirst() async {
+    if (T == Workout) {
+      final list = collection.items as List<Workout>;
+      final index = list.indexWhere((w) => !w.isCompleted);
+      if (index != -1) {
+        return list[index] as T?;
+      }
+      return null;
+    }
+    return collection.items.isNotEmpty ? collection.items.first : null;
+  }
+}
+
+class FakeIsarLinks<T> extends Fake implements IsarLinks<T> {
+  final Set<T> _items = {};
+
+  @override
+  bool add(T value) {
+    return _items.add(value);
+  }
+
+  @override
+  void addAll(Iterable<T> iterable) {
+    _items.addAll(iterable);
+  }
+
+  @override
+  List<T> toList({bool growable = true}) {
+    return _items.toList(growable: growable);
+  }
+
+  @override
+  int get length => _items.length;
+
+  @override
+  bool get isAttached => false;
+
+  @override
+  Future<void> load({bool overrideChanges = true}) async {}
+
+  @override
+  Future<void> save() async {}
+  
+  @override
+  Iterator<T> get iterator => _items.iterator;
+}
+
+class MockWorkout extends Workout {
+  @override
+  final FakeIsarLinks<GpsPoint> gpsPoints = FakeIsarLinks<GpsPoint>();
+  
+  @override
+  final FakeIsarLinks<SensorData> sensorData = FakeIsarLinks<SensorData>();
 }
 
 void main() {
@@ -106,7 +254,7 @@ void main() {
     late FakeIsar fakeIsar;
     late ProviderContainer container;
 
-    setUp(() {
+    setUp(() async {
       fakePermissionService = FakePermissionService();
       fakeGpsService = FakeGpsService();
       fakeIsar = FakeIsar();
@@ -117,6 +265,8 @@ void main() {
           isarProvider.overrideWith((ref) => fakeIsar),
         ],
       );
+      container.listen(trackingNotifierProvider, (_, __) {});
+      await Future.delayed(const Duration(milliseconds: 10));
     });
 
     tearDown(() {
@@ -329,6 +479,116 @@ void main() {
       final savedWorkouts =
           (fakeIsar.collection<Workout>() as FakeIsarCollection<Workout>).items;
       expect(savedWorkouts.first.name, equals('Morning Run'));
+    });
+
+    test('workout writes draft to Isar at start and updates in real-time', () async {
+      final notifier = container.read(trackingNotifierProvider.notifier);
+      await notifier.startTracking('running');
+
+      final savedWorkouts =
+          (fakeIsar.collection<Workout>() as FakeIsarCollection<Workout>).items;
+      expect(savedWorkouts.length, equals(1));
+      expect(savedWorkouts.first.isCompleted, isFalse);
+      expect(savedWorkouts.first.sportType, equals('running'));
+
+      // Check real-time duration updates
+      notifier.tick();
+      notifier.tick();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(savedWorkouts.first.durationSeconds, equals(2.0));
+
+      // Emit a GPS point
+      final point = GpsPoint()
+        ..latitude = 37.7749
+        ..longitude = -122.4194
+        ..altitude = 100.0
+        ..speed = 3.0
+        ..timestamp = DateTime.now();
+      fakeGpsService.emitPoint(point);
+      
+      // Check points are saved in real-time with a loop
+      List<GpsPoint> savedPoints = [];
+      for (int i = 0; i < 20; i++) {
+        await Future.delayed(const Duration(milliseconds: 10));
+        savedPoints = (fakeIsar.collection<GpsPoint>() as FakeIsarCollection<GpsPoint>).items;
+        if (savedPoints.length == 1) {
+          break;
+        }
+      }
+      expect(savedPoints.length, equals(1));
+      expect(savedPoints.first.latitude, equals(37.7749));
+    });
+
+    test('pause and resume persist isPaused state to database', () async {
+      final notifier = container.read(trackingNotifierProvider.notifier);
+      await notifier.startTracking('running');
+
+      final savedWorkouts =
+          (fakeIsar.collection<Workout>() as FakeIsarCollection<Workout>).items;
+      expect(savedWorkouts.first.isPaused, isFalse);
+
+      notifier.pauseTracking();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(savedWorkouts.first.isPaused, isTrue);
+
+      notifier.resumeTracking();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(savedWorkouts.first.isPaused, isFalse);
+    });
+
+    test('active uncompleted workout is restored on start', () async {
+      // 1. Manually insert an uncompleted workout into the database
+      final draftWorkout = MockWorkout()
+        ..sportType = 'cycling'
+        ..startTime = DateTime.now()
+        ..durationSeconds = 120.0
+        ..distanceMeters = 500.0
+        ..isCompleted = false
+        ..isPaused = true;
+      
+      final workoutsCollection = fakeIsar.collection<Workout>() as FakeIsarCollection<Workout>;
+      await workoutsCollection.put(draftWorkout);
+
+      // Also put a GPS point and attach it
+      final point = GpsPoint()
+        ..latitude = 37.7749
+        ..longitude = -122.4194
+        ..altitude = 100.0
+        ..speed = 5.0
+        ..timestamp = DateTime.now();
+      final gpsCollection = fakeIsar.collection<GpsPoint>() as FakeIsarCollection<GpsPoint>;
+      await gpsCollection.put(point);
+      draftWorkout.gpsPoints.add(point);
+
+      // 2. Initialize a new container to simulate app restart
+      final newContainer = ProviderContainer(
+        overrides: [
+          permissionServiceProvider.overrideWithValue(fakePermissionService),
+          gpsServiceProvider.overrideWithValue(fakeGpsService),
+          isarProvider.overrideWith((ref) => fakeIsar),
+        ],
+      );
+      
+      // Trigger lazy build() and keep it alive
+      newContainer.listen(trackingNotifierProvider, (_, __) {});
+      
+      // Let the initialization delayed future run
+      for (int i = 0; i < 20; i++) {
+        await Future.delayed(const Duration(milliseconds: 10));
+        if (newContainer.read(trackingNotifierProvider).status != TrackingStatus.idle) {
+          break;
+        }
+      }
+
+      final state = newContainer.read(trackingNotifierProvider);
+      expect(state.status, equals(TrackingStatus.paused));
+      expect(state.sportType, equals('cycling'));
+      expect(state.durationSeconds, equals(120.0));
+      expect(state.distanceMeters, equals(500.0));
+      expect(state.gpsPoints.length, equals(1));
+      expect(state.gpsPoints.first.latitude, equals(37.7749));
+
+      newContainer.dispose();
     });
   });
 }

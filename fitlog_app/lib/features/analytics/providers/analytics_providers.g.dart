@@ -229,7 +229,7 @@ final weeklyActivitySummaryProvider =
 typedef WeeklyActivitySummaryRef
     = AutoDisposeStreamProviderRef<WeeklyActivitySummary>;
 String _$weeklyGoalProgressHash() =>
-    r'e9be55291ae742ab7dec7f6a846ef7251cbf3841';
+    r'749b3fc4a2ae09f4a09da2bea67a41c6a413f54f';
 
 /// Provider exposing the weekly goal progress.
 ///
