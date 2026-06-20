@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fitlog_app"
+    namespace = "com.example.location_plugin_example"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.fitlog_app"
+        applicationId = "com.example.location_plugin_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -42,8 +42,4 @@ kotlin {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    implementation("com.google.android.gms:play-services-location:21.3.0")
 }

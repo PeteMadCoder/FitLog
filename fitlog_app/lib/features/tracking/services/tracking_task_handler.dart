@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:isar/isar.dart';
-import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
@@ -15,11 +15,13 @@ void startTrackingService() {
 }
 
 /// Handles GPS collection and duration tracking in the background isolate.
-/// Persists GPS points and elapsed time directly to Isar so the data survives
-/// app closure. Sends GPS point JSON to the main isolate for live UI updates.
+/// Uses a native EventChannel (LocationPlugin) to receive location updates,
+/// bypassing the MethodChannel plugin registration issue with Flutter packages.
 class TrackingTaskHandler extends TaskHandler {
-  StreamSubscription<LocationData>? _locationSub;
-  final Location _location = Location();
+  static const _locationChannel =
+      EventChannel('com.example.fitlog_app/location');
+
+  StreamSubscription? _locationSub;
   Isar? _isar;
 
   Future<Isar> _openIsar() async {
@@ -37,35 +39,25 @@ class TrackingTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    // Ensure location service is enabled before subscribing.
-    bool serviceEnabled = await _location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) return;
-    }
+    _locationSub =
+        _locationChannel.receiveBroadcastStream().listen((dynamic data) async {
+      if (data is! Map) return;
 
-    await _location.changeSettings(
-      accuracy: LocationAccuracy.high,
-      interval: 1000,
-      distanceFilter: 0.0,
-    );
-
-    _locationSub = _location.onLocationChanged.listen((data) async {
-      final ts = data.time != null
-          ? DateTime.fromMillisecondsSinceEpoch(data.time!.toInt())
+      final ts = data['timestamp'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(data['timestamp'] as int)
           : DateTime.now();
 
       // Send to main isolate for live UI updates.
       FlutterForegroundTask.sendDataToMain(jsonEncode({
         'timestamp': ts.toIso8601String(),
-        'latitude': data.latitude ?? 0.0,
-        'longitude': data.longitude ?? 0.0,
-        'altitude': data.altitude,
-        'accuracy': data.accuracy,
-        'speed': data.speed,
+        'latitude': data['latitude'],
+        'longitude': data['longitude'],
+        'altitude': data['altitude'],
+        'accuracy': data['accuracy'],
+        'speed': data['speed'],
       }));
 
-      // Persist GPS point directly to Isar from the background isolate.
+      // Persist GPS point directly to Isar.
       try {
         final isar = await _openIsar();
         final workout = await _activeWorkout(isar);
@@ -73,11 +65,11 @@ class TrackingTaskHandler extends TaskHandler {
 
         final point = GpsPoint()
           ..timestamp = ts
-          ..latitude = data.latitude ?? 0.0
-          ..longitude = data.longitude ?? 0.0
-          ..altitude = data.altitude
-          ..accuracy = data.accuracy
-          ..speed = data.speed;
+          ..latitude = (data['latitude'] as num).toDouble()
+          ..longitude = (data['longitude'] as num).toDouble()
+          ..altitude = (data['altitude'] as num?)?.toDouble()
+          ..accuracy = (data['accuracy'] as num?)?.toDouble()
+          ..speed = (data['speed'] as num?)?.toDouble();
 
         await isar.writeTxn(() async {
           await isar.gpsPoints.put(point);
@@ -90,8 +82,8 @@ class TrackingTaskHandler extends TaskHandler {
     });
   }
 
-  /// Called every second by the foreground service.
-  /// Increments durationSeconds in the database so elapsed time survives app closure.
+  /// Fires every second. Increments durationSeconds in the DB and updates
+  /// the notification text so elapsed time is visible even when app is closed.
   @override
   void onRepeatEvent(DateTime timestamp) async {
     try {
@@ -104,7 +96,6 @@ class TrackingTaskHandler extends TaskHandler {
         await isar.workouts.put(workout);
       });
 
-      // Keep notification text up to date with elapsed time.
       final secs = workout.durationSeconds.toInt();
       final h = secs ~/ 3600;
       final m = (secs % 3600) ~/ 60;
@@ -113,8 +104,7 @@ class TrackingTaskHandler extends TaskHandler {
           ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
           : '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
       FlutterForegroundTask.updateService(
-        notificationText: 'Elapsed: $timeStr',
-      );
+          notificationText: 'Elapsed: $timeStr');
     } catch (_) {}
   }
 
