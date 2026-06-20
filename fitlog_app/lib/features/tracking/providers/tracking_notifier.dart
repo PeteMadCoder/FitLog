@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
-import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:fitlog_app/core/errors/result.dart';
 import 'package:fitlog_app/core/errors/exceptions.dart';
@@ -18,20 +20,37 @@ part 'tracking_notifier.g.dart';
 /// and processing real-time telemetry coordinates.
 @riverpod
 class TrackingNotifier extends _$TrackingNotifier {
-  StreamSubscription<GpsPoint>? _gpsSubscription;
   Timer? _timer;
 
   @override
   TrackingState build() {
+    FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+
     ref.onDispose(() {
-      _gpsSubscription?.cancel();
+      FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
       _timer?.cancel();
     });
 
-    // Asynchronously restore active workout if there is one in the database
     Future.microtask(() => restoreActiveWorkout());
 
     return TrackingState.initial();
+  }
+
+  /// Parses a GPS point JSON message sent from the background isolate.
+  void _onTaskData(Object data) {
+    if (data is! String) return;
+    if (state.status != TrackingStatus.recording) return;
+
+    final Map<String, dynamic> json = jsonDecode(data);
+    final point = GpsPoint()
+      ..timestamp = DateTime.parse(json['timestamp'] as String)
+      ..latitude = (json['latitude'] as num).toDouble()
+      ..longitude = (json['longitude'] as num).toDouble()
+      ..altitude = (json['altitude'] as num?)?.toDouble()
+      ..accuracy = (json['accuracy'] as num?)?.toDouble()
+      ..speed = (json['speed'] as num?)?.toDouble();
+
+    _onGpsPointReceived(point);
   }
 
   /// Restores any active, uncompleted workout from the Isar database.
@@ -43,79 +62,66 @@ class TrackingNotifier extends _$TrackingNotifier {
           .read(gpsServiceProvider)
           .getActiveWorkout(isar);
 
-      if (activeWorkout != null) {
-        if (state.status != TrackingStatus.idle) return;
-        // Load GPS points
-        if (activeWorkout.gpsPoints.isAttached) {
-          await activeWorkout.gpsPoints.load();
-        }
-        final points = activeWorkout.gpsPoints.toList();
+      if (activeWorkout == null) return;
+      if (state.status != TrackingStatus.idle) return;
 
-        // Load sensor data
-        if (activeWorkout.sensorData.isAttached) {
-          await activeWorkout.sensorData.load();
-        }
-        final sensors = activeWorkout.sensorData.toList();
+      if (activeWorkout.gpsPoints.isAttached) {
+        await activeWorkout.gpsPoints.load();
+      }
+      final points = activeWorkout.gpsPoints.toList();
 
-        final restoredStatus = activeWorkout.isPaused
-            ? TrackingStatus.paused
-            : TrackingStatus.recording;
+      if (activeWorkout.sensorData.isAttached) {
+        await activeWorkout.sensorData.load();
+      }
+      final sensors = activeWorkout.sensorData.toList();
 
-        state = TrackingState(
-          status: restoredStatus,
-          activeWorkoutId: activeWorkout.id,
-          name: activeWorkout.name,
-          sportType: activeWorkout.sportType,
-          startTime: activeWorkout.startTime,
-          durationSeconds: activeWorkout.durationSeconds,
-          distanceMeters: activeWorkout.distanceMeters,
-          gpsPoints: points,
-          sensorData: sensors,
-          currentSpeed: points.isNotEmpty ? (points.last.speed ?? 0.0) : 0.0,
-          currentAltitude: points.isNotEmpty ? (points.last.altitude ?? 0.0) : 0.0,
-          elevationGain: activeWorkout.elevationGain ?? 0.0,
-        );
+      final restoredStatus = activeWorkout.isPaused
+          ? TrackingStatus.paused
+          : TrackingStatus.recording;
 
-        if (restoredStatus == TrackingStatus.recording) {
-          _startTimer();
+      state = TrackingState(
+        status: restoredStatus,
+        activeWorkoutId: activeWorkout.id,
+        name: activeWorkout.name,
+        sportType: activeWorkout.sportType,
+        startTime: activeWorkout.startTime,
+        durationSeconds: activeWorkout.durationSeconds,
+        distanceMeters: activeWorkout.distanceMeters,
+        gpsPoints: points,
+        sensorData: sensors,
+        currentSpeed: points.isNotEmpty ? (points.last.speed ?? 0.0) : 0.0,
+        currentAltitude:
+            points.isNotEmpty ? (points.last.altitude ?? 0.0) : 0.0,
+        elevationGain: activeWorkout.elevationGain ?? 0.0,
+      );
 
-          final gpsService = ref.read(gpsServiceProvider);
-          await gpsService.configureGpsSettings();
-          await gpsService.enableBackgroundMode();
-
-          _gpsSubscription?.cancel();
-          _gpsSubscription = gpsService.getGpsPointStream().listen(
-            _onGpsPointReceived,
-            onError: (e) {},
-          );
+      if (restoredStatus == TrackingStatus.recording) {
+        _startTimer();
+        // Re-attach to the already-running service if it survived app closure.
+        final isRunning =
+            await ref.read(gpsServiceProvider).isServiceRunning;
+        if (!isRunning) {
+          await ref.read(gpsServiceProvider).startForegroundService();
         }
       }
     } catch (_) {}
   }
 
   /// Starts tracking a new workout session for [sportType].
-  ///
-  /// Checks location permission first. If granted, configures GPS settings,
-  /// activates background mode, begins location updates streaming, and starts the timer.
   Future<Result<void, AppException>> startTracking(String sportType) async {
-    if (state.status != TrackingStatus.idle) {
-      return const Success(null);
-    }
+    if (state.status != TrackingStatus.idle) return const Success(null);
 
     final permissionService = ref.read(permissionServiceProvider);
 
-    // Check foreground location permission
     final hasPermission = await permissionService.hasLocationPermission();
     if (!hasPermission) {
       final granted = await permissionService.requestLocationPermission();
       if (!granted) {
         return const Failure(
-          PermissionException('Location permission not granted.'),
-        );
+            PermissionException('Location permission not granted.'));
       }
     }
 
-    // Check background location permission
     final hasBackgroundPermission =
         await permissionService.hasBackgroundLocationPermission();
     if (!hasBackgroundPermission) {
@@ -123,16 +129,10 @@ class TrackingNotifier extends _$TrackingNotifier {
           await permissionService.requestBackgroundLocationPermission();
       if (!granted) {
         return const Failure(
-          PermissionException('Background location permission not granted.'),
-        );
+            PermissionException('Background location permission not granted.'));
       }
     }
 
-    final gpsService = ref.read(gpsServiceProvider);
-    await gpsService.configureGpsSettings();
-    await gpsService.enableBackgroundMode();
-
-    // Create active draft workout in database
     final workout = Workout()
       ..sportType = sportType
       ..startTime = DateTime.now()
@@ -159,14 +159,7 @@ class TrackingNotifier extends _$TrackingNotifier {
     );
 
     _startTimer();
-
-    _gpsSubscription?.cancel();
-    _gpsSubscription = gpsService.getGpsPointStream().listen(
-      _onGpsPointReceived,
-      onError: (e) {
-        // Gracefully ignore stream telemetry errors
-      },
-    );
+    await ref.read(gpsServiceProvider).startForegroundService();
 
     return const Success(null);
   }
@@ -178,7 +171,6 @@ class TrackingNotifier extends _$TrackingNotifier {
     _timer?.cancel();
     state = state.copyWith(status: TrackingStatus.paused);
 
-    // Update isPaused in Isar database
     final id = state.activeWorkoutId;
     if (id != null) {
       ref.read(isarProvider.future).then((isar) {
@@ -200,7 +192,6 @@ class TrackingNotifier extends _$TrackingNotifier {
     state = state.copyWith(status: TrackingStatus.recording);
     _startTimer();
 
-    // Update isPaused in Isar database
     final id = state.activeWorkoutId;
     if (id != null) {
       ref.read(isarProvider.future).then((isar) {
@@ -215,7 +206,7 @@ class TrackingNotifier extends _$TrackingNotifier {
     }
   }
 
-  /// Discards the active tracking session, cancels updates, and resets to idle.
+  /// Discards the active tracking session and resets to idle.
   void discardTracking() {
     final id = state.activeWorkoutId;
     _cleanup();
@@ -226,18 +217,12 @@ class TrackingNotifier extends _$TrackingNotifier {
         isar.writeTxn(() async {
           final workout = await isar.workouts.get(id);
           if (workout != null) {
-            if (workout.gpsPoints.isAttached) {
-              await workout.gpsPoints.load();
-            }
-            final pts = workout.gpsPoints.toList();
-            for (final pt in pts) {
+            if (workout.gpsPoints.isAttached) await workout.gpsPoints.load();
+            for (final pt in workout.gpsPoints.toList()) {
               await isar.gpsPoints.delete(pt.id);
             }
-            if (workout.sensorData.isAttached) {
-              await workout.sensorData.load();
-            }
-            final sensors = workout.sensorData.toList();
-            for (final s in sensors) {
+            if (workout.sensorData.isAttached) await workout.sensorData.load();
+            for (final s in workout.sensorData.toList()) {
               await isar.sensorDatas.delete(s.id);
             }
             await isar.workouts.delete(id);
@@ -252,8 +237,7 @@ class TrackingNotifier extends _$TrackingNotifier {
     state = state.copyWith(name: name);
   }
 
-  /// Stops tracking, cancels updates, persists the workout session data to Isar database,
-  /// and resets the notifier to idle.
+  /// Stops tracking, persists final workout data, and resets to idle.
   Future<Result<Workout, AppException>> stopTracking() async {
     final recordedState = state;
     _cleanup();
@@ -283,9 +267,7 @@ class TrackingNotifier extends _$TrackingNotifier {
                 recordedState.distanceMeters / recordedState.durationSeconds;
           }
 
-          if (workout.gpsPoints.isAttached) {
-            await workout.gpsPoints.load();
-          }
+          if (workout.gpsPoints.isAttached) await workout.gpsPoints.load();
           if (workout.gpsPoints.isNotEmpty) {
             workout.maxSpeed = workout.gpsPoints
                 .map((p) => p.speed ?? 0.0)
@@ -308,44 +290,33 @@ class TrackingNotifier extends _$TrackingNotifier {
   }
 
   /// Increments the active workout duration by 1 second if currently recording.
+  /// Updates in-memory state only; the background isolate persists to Isar.
   void tick() {
     if (state.status == TrackingStatus.recording) {
-      final newDuration = state.durationSeconds + 1.0;
-      state = state.copyWith(durationSeconds: newDuration);
-
-      final id = state.activeWorkoutId;
-      if (id != null) {
-        ref.read(isarProvider.future).then((isar) {
-          isar.writeTxn(() async {
-            final workout = await isar.workouts.get(id);
-            if (workout != null) {
-              workout.durationSeconds = newDuration;
-              await isar.workouts.put(workout);
-            }
-          }).catchError((_) {});
-        }).catchError((_) {});
-      }
+      state = state.copyWith(durationSeconds: state.durationSeconds + 1.0);
     }
   }
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      tick();
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
 
   void _cleanup() {
     _timer?.cancel();
-    _gpsSubscription?.cancel();
-    _gpsSubscription = null;
+    _timer = null;
+    ref.read(gpsServiceProvider).stopForegroundService();
+  }
 
-    ref.read(gpsServiceProvider).disableBackgroundMode();
+  /// For testing only: directly process a GPS point without going through
+  /// the foreground task channel.
+  @visibleForTesting
+  void processGpsPointForTesting(GpsPoint point) {
+    if (state.status != TrackingStatus.recording) return;
+    _onGpsPointReceived(point);
   }
 
   void _onGpsPointReceived(GpsPoint point) {
-    if (state.status != TrackingStatus.recording) return;
-
     final updatedPoints = List<GpsPoint>.from(state.gpsPoints)..add(point);
     double newDistance = state.distanceMeters;
     double newElevationGain = state.elevationGain;
@@ -353,24 +324,21 @@ class TrackingNotifier extends _$TrackingNotifier {
     if (state.gpsPoints.isNotEmpty) {
       final prevPoint = state.gpsPoints.last;
 
-      // Calculate distance using standard Haversine formula
-      final dist = _calculateDistance(
+      newDistance += _calculateDistance(
         prevPoint.latitude,
         prevPoint.longitude,
         point.latitude,
         point.longitude,
       );
-      newDistance += dist;
 
-      // Accumulate positive elevation difference
       if (point.altitude != null && prevPoint.altitude != null) {
         final diff = point.altitude! - prevPoint.altitude!;
-        if (diff > 0) {
-          newElevationGain += diff;
-        }
+        if (diff > 0) newElevationGain += diff;
       }
     }
 
+    // Update in-memory state only. Persistence is handled by the background
+    // isolate (TrackingTaskHandler) to avoid duplicate writes and contention.
     state = state.copyWith(
       gpsPoints: updatedPoints,
       distanceMeters: newDistance,
@@ -378,47 +346,18 @@ class TrackingNotifier extends _$TrackingNotifier {
       currentSpeed: point.speed ?? 0.0,
       currentAltitude: point.altitude ?? 0.0,
     );
-
-    // Save GPS point and update workout metrics in Isar in real-time
-    final id = state.activeWorkoutId;
-    if (id != null) {
-      ref.read(isarProvider.future).then((isar) {
-        isar.writeTxn(() async {
-          await isar.gpsPoints.put(point);
-          final workout = await isar.workouts.get(id);
-          if (workout != null) {
-            workout.gpsPoints.add(point);
-            workout.distanceMeters = newDistance;
-            workout.elevationGain = newElevationGain;
-            await isar.workouts.put(workout);
-            if (workout.gpsPoints.isAttached) {
-              await workout.gpsPoints.save();
-            }
-          }
-        }).catchError((_) {});
-      }).catchError((_) {});
-    }
   }
 
-  /// Computes distance in meters between two lat/lng coordinates using the Haversine formula.
   double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const r = 6371000.0; // Earth radius in meters
+      double lat1, double lon1, double lat2, double lon2) {
+    const r = 6371000.0;
     final dLat = (lat2 - lat1) * pi / 180.0;
     final dLon = (lon2 - lon1) * pi / 180.0;
-
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
+    final a = sin(dLat / 2) * sin(dLat / 2) +
         cos(lat1 * pi / 180.0) *
             cos(lat2 * pi / 180.0) *
             sin(dLon / 2) *
             sin(dLon / 2);
-
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return r * c;
+    return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 }

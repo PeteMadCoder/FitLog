@@ -1,80 +1,67 @@
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:isar/isar.dart';
-import 'package:location/location.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'tracking_task_handler.dart';
 
 part 'gps_service.g.dart';
 
-/// Service responsible for configuring GPS tracking parameters,
-/// requesting background tracking notifications, and streaming location updates.
+/// Service responsible for managing the background GPS foreground service.
 class GpsService {
-  final Location _location;
-
-  GpsService({Location? location}) : _location = location ?? Location();
-
-  /// Retrieves any active, uncompleted workout from the Isar database.
-  Future<Workout?> getActiveWorkout(Isar isar) async {
-    return await isar.workouts.filter().isCompletedEqualTo(false).findFirst();
-  }
-
-  /// Configures the GPS tracking settings to request high-accuracy data
-  /// and stream updates every 1 second or every 5 meters.
-  Future<void> configureGpsSettings() async {
-    await _location.changeSettings(
-      accuracy: LocationAccuracy.high,
-      interval: 1000, // Update every 1000ms (1 second)
-      distanceFilter: 0.0, // Set to 0 to capture updates by time and speed
+  GpsService() {
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'fitlog_tracking',
+        channelName: 'FitLog Tracking',
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+        playSound: false,
+      ),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.repeat(1000),
+        autoRunOnBoot: false,
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
     );
   }
 
-  /// Enables background location recording and registers a foreground
-  /// notification for Android to keep the system process alive.
-  Future<bool> enableBackgroundMode() async {
-    try {
-      // Set up native Android background notification parameters
-      await _location.changeNotificationOptions(
-        title: 'FitLog Active Activity',
-        subtitle: 'FitLog is tracking your workout in the background.',
-        iconName: 'mipmap/ic_launcher',
-        onTapBringToFront: true,
-      );
+  /// Retrieves any active, uncompleted workout from the Isar database.
+  Future<Workout?> getActiveWorkout(Isar isar) async {
+    return isar.workouts.filter().isCompletedEqualTo(false).findFirst();
+  }
 
-      return await _location.enableBackgroundMode(enable: true);
-    } catch (e) {
-      // Return false if platform-specific errors prevent enabling background mode
-      return false;
+  /// Starts the GPS foreground service. Survives app closure.
+  Future<bool> startForegroundService() async {
+    // Request notification permission required on Android 13+.
+    final notifPermission =
+        await FlutterForegroundTask.checkNotificationPermission();
+    if (notifPermission != NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
     }
+
+    final result = await FlutterForegroundTask.startService(
+      serviceId: 1001,
+      notificationTitle: 'FitLog Active Workout',
+      notificationText: 'Tracking your workout in the background.',
+      callback: startTrackingService,
+    );
+    return result is ServiceRequestSuccess;
   }
 
-  /// Disables background location mode.
-  Future<bool> disableBackgroundMode() async {
-    try {
-      return await _location.enableBackgroundMode(enable: false);
-    } catch (e) {
-      return false;
-    }
+  /// Stops the GPS foreground service.
+  Future<bool> stopForegroundService() async {
+    final result = await FlutterForegroundTask.stopService();
+    return result is ServiceRequestSuccess;
   }
 
-  /// Exposes a mapped stream of [GpsPoint] objects derived from raw [LocationData].
-  Stream<GpsPoint> getGpsPointStream() {
-    return _location.onLocationChanged.map((locationData) {
-      final timestamp = locationData.time != null
-          ? DateTime.fromMillisecondsSinceEpoch(locationData.time!.toInt())
-          : DateTime.now();
-
-      return GpsPoint()
-        ..timestamp = timestamp
-        ..latitude = locationData.latitude ?? 0.0
-        ..longitude = locationData.longitude ?? 0.0
-        ..altitude = locationData.altitude
-        ..accuracy = locationData.accuracy
-        ..speed = locationData.speed;
-    });
-  }
+  /// Returns whether the foreground service is currently running.
+  Future<bool> get isServiceRunning => FlutterForegroundTask.isRunningService;
 }
 
-/// Provider exposing the GpsService instance.
+/// Provider exposing the GpsService singleton.
 @riverpod
 GpsService gpsService(GpsServiceRef ref) {
   return GpsService();

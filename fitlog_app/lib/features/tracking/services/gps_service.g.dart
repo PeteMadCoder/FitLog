@@ -8,16 +8,15 @@ part of 'gps_service.dart';
 
 String _$gpsServiceHash() => r'320a21a9cc342266f6d431c82a2e7e0cf3823096';
 
-/// Provider exposing the GpsService instance.
+/// Provider exposing the GpsService singleton.
 ///
 /// Copied from [gpsService].
 @ProviderFor(gpsService)
 final gpsServiceProvider = AutoDisposeProvider<GpsService>.internal(
   gpsService,
   name: r'gpsServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$gpsServiceHash,
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$gpsServiceHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );

@@ -43,13 +43,8 @@ class FakePermissionService implements PermissionService {
 }
 
 class FakeGpsService implements GpsService {
-  final _controller = StreamController<GpsPoint>.broadcast();
-  bool backgroundModeEnabled = false;
+  bool serviceRunning = false;
   Workout? activeWorkout;
-
-  void emitPoint(GpsPoint point) {
-    _controller.add(point);
-  }
 
   @override
   Future<Workout?> getActiveWorkout(Isar isar) async {
@@ -57,30 +52,25 @@ class FakeGpsService implements GpsService {
     try {
       final collection = isar.collection<Workout>() as FakeIsarCollection<Workout>;
       final index = collection.items.indexWhere((w) => !w.isCompleted);
-      if (index != -1) {
-        return collection.items[index];
-      }
+      if (index != -1) return collection.items[index];
     } catch (_) {}
     return null;
   }
 
   @override
-  Future<void> configureGpsSettings() async {}
-
-  @override
-  Future<bool> enableBackgroundMode() async {
-    backgroundModeEnabled = true;
+  Future<bool> startForegroundService() async {
+    serviceRunning = true;
     return true;
   }
 
   @override
-  Future<bool> disableBackgroundMode() async {
-    backgroundModeEnabled = false;
+  Future<bool> stopForegroundService() async {
+    serviceRunning = false;
     return true;
   }
 
   @override
-  Stream<GpsPoint> getGpsPointStream() => _controller.stream;
+  Future<bool> get isServiceRunning async => serviceRunning;
 }
 
 class FakeIsar extends Fake implements Isar {
@@ -303,7 +293,7 @@ void main() {
       expect(state.status, equals(TrackingStatus.recording));
       expect(state.sportType, equals('running'));
       expect(state.startTime, isNotNull);
-      expect(fakeGpsService.backgroundModeEnabled, isTrue);
+      expect(fakeGpsService.serviceRunning, isTrue);
     });
 
     test('timer increments duration while recording', () async {
@@ -383,7 +373,7 @@ void main() {
       final state = container.read(trackingNotifierProvider);
       expect(state.status, equals(TrackingStatus.idle));
       expect(state.durationSeconds, equals(0.0));
-      expect(fakeGpsService.backgroundModeEnabled, isFalse);
+      expect(fakeGpsService.serviceRunning, isFalse);
     });
 
     test(
@@ -423,7 +413,6 @@ void main() {
       final notifier = container.read(trackingNotifierProvider.notifier);
       await notifier.startTracking('running');
 
-      // Emit first GpsPoint (starting location, altitude = 100m)
       final point1 = GpsPoint()
         ..latitude = 37.7749
         ..longitude = -122.4194
@@ -431,8 +420,8 @@ void main() {
         ..speed = 3.0
         ..timestamp = DateTime.now();
 
-      fakeGpsService.emitPoint(point1);
-      await Future.microtask(() {}); // let stream listener process
+      notifier.processGpsPointForTesting(point1);
+      await Future.microtask(() {});
 
       var state = container.read(trackingNotifierProvider);
       expect(state.gpsPoints.length, equals(1));
@@ -441,7 +430,6 @@ void main() {
       expect(state.currentSpeed, equals(3.0));
       expect(state.currentAltitude, equals(100.0));
 
-      // Emit second GpsPoint (approx 11.12 meters north, altitude = 105m)
       final point2 = GpsPoint()
         ..latitude = 37.7750
         ..longitude = -122.4194
@@ -449,7 +437,7 @@ void main() {
         ..speed = 4.0
         ..timestamp = DateTime.now();
 
-      fakeGpsService.emitPoint(point2);
+      notifier.processGpsPointForTesting(point2);
       await Future.microtask(() {});
 
       state = container.read(trackingNotifierProvider);
@@ -491,32 +479,31 @@ void main() {
       expect(savedWorkouts.first.isCompleted, isFalse);
       expect(savedWorkouts.first.sportType, equals('running'));
 
-      // Check real-time duration updates
+      // tick() updates in-memory state only; Isar persistence is owned by the
+      // background isolate (TrackingTaskHandler.onRepeatEvent), not the notifier.
       notifier.tick();
       notifier.tick();
-      await Future.delayed(const Duration(milliseconds: 50));
-      expect(savedWorkouts.first.durationSeconds, equals(2.0));
+      expect(
+        container.read(trackingNotifierProvider).durationSeconds,
+        equals(2.0),
+      );
+      // DB value unchanged by tick() — background isolate owns it.
+      expect(savedWorkouts.first.durationSeconds, equals(0.0));
 
-      // Emit a GPS point
+      // GPS points are handled by the background isolate too; processGpsPointForTesting
+      // only updates in-memory state.
       final point = GpsPoint()
         ..latitude = 37.7749
         ..longitude = -122.4194
         ..altitude = 100.0
         ..speed = 3.0
         ..timestamp = DateTime.now();
-      fakeGpsService.emitPoint(point);
-      
-      // Check points are saved in real-time with a loop
-      List<GpsPoint> savedPoints = [];
-      for (int i = 0; i < 20; i++) {
-        await Future.delayed(const Duration(milliseconds: 10));
-        savedPoints = (fakeIsar.collection<GpsPoint>() as FakeIsarCollection<GpsPoint>).items;
-        if (savedPoints.length == 1) {
-          break;
-        }
-      }
-      expect(savedPoints.length, equals(1));
-      expect(savedPoints.first.latitude, equals(37.7749));
+      notifier.processGpsPointForTesting(point);
+
+      expect(
+        container.read(trackingNotifierProvider).gpsPoints.length,
+        equals(1),
+      );
     });
 
     test('pause and resume persist isPaused state to database', () async {

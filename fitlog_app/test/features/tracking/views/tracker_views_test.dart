@@ -34,13 +34,13 @@ class FakeGpsService implements GpsService {
   Future<Workout?> getActiveWorkout(Isar isar) async => null;
 
   @override
-  Future<void> configureGpsSettings() async {}
+  Future<bool> startForegroundService() async => true;
+
   @override
-  Future<bool> enableBackgroundMode() async => true;
+  Future<bool> stopForegroundService() async => true;
+
   @override
-  Future<bool> disableBackgroundMode() async => true;
-  @override
-  Stream<GpsPoint> getGpsPointStream() => const Stream<GpsPoint>.empty();
+  Future<bool> get isServiceRunning async => false;
 }
 
 class FakeIsar extends Fake implements Isar {
