@@ -5,6 +5,7 @@ import 'package:fitlog_app/app/app_theme.dart';
 import 'package:fitlog_app/app/main_navigation_shell.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   // Required so the main isolate can receive data from the background service isolate.
   FlutterForegroundTask.initCommunicationPort();
   runApp(const ProviderScope(child: FitLogApp()));

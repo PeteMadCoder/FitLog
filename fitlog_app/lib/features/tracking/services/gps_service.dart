@@ -46,6 +46,9 @@ class GpsService {
       serviceId: 1001,
       notificationTitle: 'FitLog Active Workout',
       notificationText: 'Tracking your workout in the background.',
+      notificationIcon: const NotificationIcon(
+        metaDataName: 'notificationIcon',
+      ),
       callback: startTrackingService,
     );
     return result is ServiceRequestSuccess;
