@@ -18,7 +18,7 @@ part 'tracking_notifier.g.dart';
 
 /// Notifier responsible for managing the active tracking session state
 /// and processing real-time telemetry coordinates.
-@riverpod
+@Riverpod(keepAlive: true)
 class TrackingNotifier extends _$TrackingNotifier {
   Timer? _timer;
 
@@ -79,6 +79,26 @@ class TrackingNotifier extends _$TrackingNotifier {
           ? TrackingStatus.paused
           : TrackingStatus.recording;
 
+      double restoredDistance = 0.0;
+      double restoredElevationGain = 0.0;
+      if (points.length >= 2) {
+        for (int i = 1; i < points.length; i++) {
+          restoredDistance += _calculateDistance(
+            points[i - 1].latitude,
+            points[i - 1].longitude,
+            points[i].latitude,
+            points[i].longitude,
+          );
+          if (points[i].altitude != null && points[i - 1].altitude != null) {
+            final diff = points[i].altitude! - points[i - 1].altitude!;
+            if (diff > 0) restoredElevationGain += diff;
+          }
+        }
+      } else {
+        restoredDistance = activeWorkout.distanceMeters;
+        restoredElevationGain = activeWorkout.elevationGain ?? 0.0;
+      }
+
       state = TrackingState(
         status: restoredStatus,
         activeWorkoutId: activeWorkout.id,
@@ -86,13 +106,13 @@ class TrackingNotifier extends _$TrackingNotifier {
         sportType: activeWorkout.sportType,
         startTime: activeWorkout.startTime,
         durationSeconds: activeWorkout.durationSeconds,
-        distanceMeters: activeWorkout.distanceMeters,
+        distanceMeters: restoredDistance,
         gpsPoints: points,
         sensorData: sensors,
         currentSpeed: points.isNotEmpty ? (points.last.speed ?? 0.0) : 0.0,
         currentAltitude:
             points.isNotEmpty ? (points.last.altitude ?? 0.0) : 0.0,
-        elevationGain: activeWorkout.elevationGain ?? 0.0,
+        elevationGain: restoredElevationGain,
       );
 
       if (restoredStatus == TrackingStatus.recording) {
@@ -257,19 +277,39 @@ class TrackingNotifier extends _$TrackingNotifier {
           workout.name = recordedState.name;
           workout.endTime = DateTime.now();
           workout.durationSeconds = recordedState.durationSeconds;
-          workout.distanceMeters = recordedState.distanceMeters;
-          workout.elevationGain = recordedState.elevationGain;
+          
+          if (workout.gpsPoints.isAttached) await workout.gpsPoints.load();
+          final points = workout.gpsPoints.toList();
+
+          double finalDistance = 0.0;
+          double finalElevationGain = 0.0;
+          if (points.isNotEmpty) {
+            for (int i = 1; i < points.length; i++) {
+              finalDistance += _calculateDistance(
+                points[i - 1].latitude,
+                points[i - 1].longitude,
+                points[i].latitude,
+                points[i].longitude,
+              );
+              if (points[i].altitude != null && points[i - 1].altitude != null) {
+                final diff = points[i].altitude! - points[i - 1].altitude!;
+                if (diff > 0) finalElevationGain += diff;
+              }
+            }
+          }
+
+          workout.distanceMeters = finalDistance;
+          workout.elevationGain = finalElevationGain;
           workout.isCompleted = true;
           workout.isPaused = false;
 
           if (recordedState.durationSeconds > 0) {
             workout.averageSpeed =
-                recordedState.distanceMeters / recordedState.durationSeconds;
+                finalDistance / recordedState.durationSeconds;
           }
 
-          if (workout.gpsPoints.isAttached) await workout.gpsPoints.load();
-          if (workout.gpsPoints.isNotEmpty) {
-            workout.maxSpeed = workout.gpsPoints
+          if (points.isNotEmpty) {
+            workout.maxSpeed = points
                 .map((p) => p.speed ?? 0.0)
                 .fold<double>(0.0, (maxVal, speed) => max(maxVal, speed));
           }
