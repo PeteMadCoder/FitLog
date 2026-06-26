@@ -1,6 +1,7 @@
 """
 Extraction module for Sports Tracker GPX files.
-Handles logging in, fetching the workout list, and downloading workouts one by one.
+Handles logging in via Playwright to extract the session cookie,
+fetching the workout list, and downloading workouts one by one.
 """
 
 import getpass
@@ -8,6 +9,7 @@ import os
 import time
 from datetime import datetime, timezone
 import requests
+from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://api.sports-tracker.com/apiserver/v1"
 LOGIN_URL = f"{BASE_URL}/login"
@@ -30,38 +32,102 @@ def get_credentials():
 
 
 def login(email, password):
-    """Authenticate with Sports Tracker API (via URL parameters) and return the session key."""
-    print("Logging into Sports Tracker...")
-    params = {
-        "l": "en",
-        "u": email,
-        "p": password,
-    }
-    payload = {
-        "username": email,
-        "password": password,
-    }
-
+    """Authenticate with Sports Tracker via Playwright to extract the sessionkey cookie."""
+    print("Launching browser via Playwright...")
     try:
-        response = requests.post(LOGIN_URL, params=params, json=payload, headers=HEADERS)
-        if response.status_code != 200:
-            print(f"Login failed: HTTP {response.status_code}")
+        with sync_playwright() as p:
             try:
-                print(f"Server response: {response.text}")
+                # Launch a headless chromium browser
+                browser = p.chromium.launch(headless=False)
+            except Exception as e:
+                error_str = str(e).lower()
+                if "executable doesn't exist" in error_str or "playwright install" in error_str:
+                    print("\n[ERROR] Playwright browser binaries not found.")
+                    print("Please install them inside your active virtual environment by running:")
+                    print("  playwright install chromium")
+                    print("Or if running from outside: python3 -m playwright install chromium\n")
+                raise e
+
+            context = browser.new_context(
+                viewport={"width": 1280, "height": 800},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            
+            print("Navigating to Sports Tracker login page...")
+            page.goto("https://www.sports-tracker.com/login#reject-all", wait_until="networkidle")
+            
+            # Dismiss cookie banners / Privacy Preference Center if present to prevent interference
+            try:
+                print("Waiting for cookie consent banner to load...")
+                onetrust_btn = page.locator('#onetrust-accept-btn-handler')
+                # Wait up to 5 seconds for the OneTrust Accept button to appear
+                onetrust_btn.wait_for(state="visible", timeout=5000)
+                onetrust_btn.click()
+                print("Clicked OneTrust Accept button.")
+                time.sleep(1.0)
+            except Exception as e:
+                print("OneTrust Accept button not found or timed out. Trying general selectors...")
+                try:
+                    cookie_buttons = page.locator('button:has-text("Accept"), button:has-text("Agree"), button:has-text("Accept All"), button:has-text("OK")')
+                    if cookie_buttons.count() > 0:
+                        cookie_buttons.first.click()
+                        print("Accepted general cookie banner.")
+                        time.sleep(1.0)
+                except Exception as ex:
+                    print(f"General cookie banner handling failed: {ex}")
+
+            # 3. Clean up DOM of any remaining cookie overlays or dialog elements just in case
+            try:
+                page.evaluate("""() => {
+                    const idsToRemove = ['onetrust-consent-sdk', 'onetrust-banner-sdk', 'onetrust-pc-dark-filter'];
+                    idsToRemove.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.remove();
+                    });
+                    document.querySelectorAll('[id*="onetrust"], [class*="onetrust"], [id*="cookie"], [class*="cookie"]').forEach(el => el.remove());
+                    // Re-enable scrolling on body if it was blocked by the modal
+                    document.body.style.overflow = 'auto';
+                    document.documentElement.style.overflow = 'auto';
+                }""")
+                print("Cleaned up cookie banners from DOM.")
             except Exception:
                 pass
-            return None
 
-        data = response.json()
-        session_key = data.get("sessionkey")
-        if not session_key:
-            print("Login failed: Session key not found in response.")
-            return None
-
-        print("Login successful!")
-        return session_key
+            print("Entering credentials...")
+            email_input = page.locator('input[type="email"], input[name="email"], input[name="username"]')
+            password_input = page.locator('input[type="password"], input[name="password"]')
+            
+            email_input.wait_for(state="visible", timeout=10000)
+            email_input.fill(email)
+            password_input.fill(password)
+            
+            print("Clicking login button...")
+            submit_button = page.locator('button[type="submit"], input[type="submit"], button:has-text("Log in"), button:has-text("Sign in")')
+            submit_button.click()
+            
+            print("Waiting for login authorization to complete...")
+            session_key = None
+            for _ in range(25):  # Loop for up to 25 seconds
+                cookies = context.cookies()
+                for cookie in cookies:
+                    if cookie["name"] == "sessionkey":
+                        session_key = cookie["value"]
+                        break
+                if session_key:
+                    break
+                time.sleep(1.0)
+            
+            browser.close()
+            
+            if session_key:
+                print("Login successful! Session key extracted.")
+                return session_key
+            else:
+                print("Login failed: sessionkey cookie was not found in browser cookies after login attempt.")
+                return None
     except Exception as e:
-        print(f"Error during login: {e}")
+        print(f"Error during Playwright login: {e}")
         return None
 
 
