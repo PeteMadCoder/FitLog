@@ -30,13 +30,20 @@ def get_credentials():
 
 
 def login(email, password):
-    """Authenticate with Sports Tracker API (via JSON payload) and return the session key."""
+    """Authenticate with Sports Tracker API (via URL parameters) and return the session key."""
     print("Logging into Sports Tracker...")
-    payload = {"username": email, "password": password}
-    headers = {**HEADERS, "Content-Type": "application/json"}
+    params = {
+        "l": "en",
+        "u": email,
+        "p": password,
+    }
+    payload = {
+        "username": email,
+        "password": password,
+    }
 
     try:
-        response = requests.post(LOGIN_URL, json=payload, headers=headers)
+        response = requests.post(LOGIN_URL, params=params, json=payload, headers=HEADERS)
         if response.status_code != 200:
             print(f"Login failed: HTTP {response.status_code}")
             try:
