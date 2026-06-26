@@ -174,7 +174,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (result != null && result.files.single.path != null) {
         final file = File(result.files.single.path!);
-        final content = await file.readAsString();
+        final bytes = await file.readAsBytes();
+        final content = utf8.decode(bytes, allowMalformed: true);
         await ref.read(backupServiceProvider).importFromJson(content);
         
         // Reset initialization so the profile form re-reads settings from provider
@@ -315,7 +316,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
         final file = File(filePath);
-        final content = await file.readAsString();
+        final bytes = await file.readAsBytes();
+        final content = utf8.decode(bytes, allowMalformed: true);
 
         final isTcx = filePath.toLowerCase().endsWith('.tcx') || content.contains('<TrainingCenterDatabase');
         
