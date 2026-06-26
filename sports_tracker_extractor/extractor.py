@@ -57,53 +57,16 @@ def login(email, password):
             print("Navigating to Sports Tracker login page...")
             page.goto("https://www.sports-tracker.com/login#reject-all", wait_until="networkidle")
             
-            # Dismiss cookie banners / Privacy Preference Center if present to prevent interference
-            try:
-                print("Waiting for cookie consent banner to load...")
-                onetrust_btn = page.locator('#onetrust-accept-btn-handler')
-                # Wait up to 5 seconds for the OneTrust Accept button to appear
-                onetrust_btn.wait_for(state="visible", timeout=5000)
-                onetrust_btn.click()
-                print("Clicked OneTrust Accept button.")
-                time.sleep(1.0)
-            except Exception as e:
-                print("OneTrust Accept button not found or timed out. Trying general selectors...")
-                try:
-                    cookie_buttons = page.locator('button:has-text("Accept"), button:has-text("Agree"), button:has-text("Accept All"), button:has-text("OK")')
-                    if cookie_buttons.count() > 0:
-                        cookie_buttons.first.click()
-                        print("Accepted general cookie banner.")
-                        time.sleep(1.0)
-                except Exception as ex:
-                    print(f"General cookie banner handling failed: {ex}")
-
-            # 3. Clean up DOM of any remaining cookie overlays or dialog elements just in case
-            try:
-                page.evaluate("""() => {
-                    const idsToRemove = ['onetrust-consent-sdk', 'onetrust-banner-sdk', 'onetrust-pc-dark-filter'];
-                    idsToRemove.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.remove();
-                    });
-                    document.querySelectorAll('[id*="onetrust"], [class*="onetrust"], [id*="cookie"], [class*="cookie"]').forEach(el => el.remove());
-                    // Re-enable scrolling on body if it was blocked by the modal
-                    document.body.style.overflow = 'auto';
-                    document.documentElement.style.overflow = 'auto';
-                }""")
-                print("Cleaned up cookie banners from DOM.")
-            except Exception:
-                pass
-
             print("Entering credentials...")
-            email_input = page.locator('input[type="email"], input[name="email"], input[name="username"]')
-            password_input = page.locator('input[type="password"], input[name="password"]')
+            email_input = page.locator('#username')
+            password_input = page.locator('#password')
             
             email_input.wait_for(state="visible", timeout=10000)
             email_input.fill(email)
             password_input.fill(password)
             
             print("Clicking login button...")
-            submit_button = page.locator('button[type="submit"], input[type="submit"], button:has-text("Log in"), button:has-text("Sign in")')
+            submit_button = page.locator('input[type="submit"]')
             submit_button.click()
             
             print("Waiting for login authorization to complete...")
