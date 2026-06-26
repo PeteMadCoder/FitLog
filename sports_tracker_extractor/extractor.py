@@ -164,7 +164,7 @@ def download_gpx_files(session_key, workouts, data_dir):
                     f.write(response.content)
                 download_count += 1
                 # Delay slightly to prevent rate limits
-                time.sleep(1.0)
+                time.sleep(0.1)
             else:
                 print(f"  Failed to download {workout_key}: HTTP {response.status_code}")
         except Exception as e:
@@ -188,6 +188,17 @@ def run_extraction(data_dir):
     if not workouts:
         print("No workouts found on account or failed to retrieve.")
         return False
+
+    # Save the workout metadata list to workouts_metadata.json
+    os.makedirs(data_dir, exist_ok=True)
+    metadata_file_path = os.path.join(data_dir, "workouts_metadata.json")
+    try:
+        import json
+        with open(metadata_file_path, "w", encoding="utf-8") as f:
+            json.dump(workouts, f, indent=2)
+        print(f"Saved workout metadata list to '{metadata_file_path}'.")
+    except Exception as e:
+        print(f"Error saving workout metadata list: {e}")
 
     download_gpx_files(session_key, workouts, data_dir)
     return True
