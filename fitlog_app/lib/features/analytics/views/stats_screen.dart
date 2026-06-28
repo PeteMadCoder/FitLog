@@ -716,8 +716,8 @@ class StatsScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 3,
-            crossAxisSpacing: 3,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
           ),
           itemCount: leadingEmptyDays + daysInMonth,
           itemBuilder: (context, index) {
@@ -752,18 +752,24 @@ class StatsScreen extends ConsumerWidget {
                       : null,
                 ),
                 child: Center(
-                  child: Text(
-                    day.toString(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 8,
-                      fontWeight: isToday || hasWorkouts
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isToday
-                          ? colorScheme.primary
-                          : hasWorkouts
-                              ? SportType.fromId(dayWorkouts.first.sportType).color
-                              : colorScheme.onSurface.withOpacity(0.8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.5),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        day.toString(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 8,
+                          fontWeight: isToday || hasWorkouts
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isToday
+                              ? colorScheme.primary
+                              : hasWorkouts
+                                  ? SportType.fromId(dayWorkouts.first.sportType).color
+                                  : colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
                     ),
                   ),
                 ),
