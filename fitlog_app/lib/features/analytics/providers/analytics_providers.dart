@@ -74,12 +74,14 @@ class AggregatedStats {
   final Duration totalDuration;
   final double totalCalories;
   final int workoutCount;
+  final Map<String, AggregatedStats> statsBySport;
 
   AggregatedStats({
     required this.totalDistanceMeters,
     required this.totalDuration,
     required this.totalCalories,
     required this.workoutCount,
+    required this.statsBySport,
   });
 
   factory AggregatedStats.empty() => AggregatedStats(
@@ -87,6 +89,7 @@ class AggregatedStats {
     totalDuration: Duration.zero,
     totalCalories: 0,
     workoutCount: 0,
+    statsBySport: const {},
   );
 }
 
@@ -252,17 +255,39 @@ AggregatedStats _aggregateWorkouts(List<Workout> workouts) {
   double durationSecs = 0;
   double calories = 0;
 
+  final Map<String, List<Workout>> workoutsBySport = {};
   for (final workout in workouts) {
     distance += workout.distanceMeters;
     durationSecs += workout.durationSeconds;
     calories += workout.calories ?? 0;
+    workoutsBySport.putIfAbsent(workout.sportType, () => []).add(workout);
   }
+
+  final Map<String, AggregatedStats> statsBySport = {};
+  workoutsBySport.forEach((sport, sportWorkouts) {
+    double sportDistance = 0;
+    double sportDurationSecs = 0;
+    double sportCalories = 0;
+    for (final w in sportWorkouts) {
+      sportDistance += w.distanceMeters;
+      sportDurationSecs += w.durationSeconds;
+      sportCalories += w.calories ?? 0;
+    }
+    statsBySport[sport] = AggregatedStats(
+      totalDistanceMeters: sportDistance,
+      totalDuration: Duration(seconds: sportDurationSecs.toInt()),
+      totalCalories: sportCalories,
+      workoutCount: sportWorkouts.length,
+      statsBySport: const {},
+    );
+  });
 
   return AggregatedStats(
     totalDistanceMeters: distance,
     totalDuration: Duration(seconds: durationSecs.toInt()),
     totalCalories: calories,
     workoutCount: workouts.length,
+    statsBySport: statsBySport,
   );
 }
 

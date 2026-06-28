@@ -28,6 +28,7 @@ void main() {
       totalDuration: const Duration(minutes: 30),
       totalCalories: 350,
       workoutCount: 2,
+      statsBySport: const {},
     );
 
     await tester.pumpWidget(
@@ -70,6 +71,7 @@ void main() {
       totalDuration: const Duration(minutes: 10),
       totalCalories: 100,
       workoutCount: 1,
+      statsBySport: const {},
     );
 
     final mockRefDate = DateTime(2026, 6, 28);
@@ -126,6 +128,7 @@ void main() {
       totalDuration: const Duration(minutes: 20),
       totalCalories: 200,
       workoutCount: 2,
+      statsBySport: const {},
     );
 
     final mockRefDate = DateTime(2026, 6, 28);
@@ -182,6 +185,7 @@ void main() {
       totalDuration: const Duration(minutes: 30),
       totalCalories: 300,
       workoutCount: 3,
+      statsBySport: const {},
     );
 
     final mockRefDate = DateTime(2026, 6, 28);
@@ -218,6 +222,7 @@ void main() {
       totalDuration: const Duration(minutes: 30),
       totalCalories: 300,
       workoutCount: 3,
+      statsBySport: const {},
     );
 
     final mockRefDate = DateTime(2026, 6, 28);
@@ -268,5 +273,46 @@ void main() {
     expect(find.text('CYCLING'), findsOneWidget);
 
     await binding.setSurfaceSize(null);
+  });
+
+  testWidgets('StatsScreen displays breakdown by sport section when statsBySport is present', (tester) async {
+    final sportStats = AggregatedStats(
+      totalDistanceMeters: 5000,
+      totalDuration: const Duration(minutes: 30),
+      totalCalories: 350,
+      workoutCount: 2,
+      statsBySport: const {},
+    );
+    final stats = AggregatedStats(
+      totalDistanceMeters: 5000,
+      totalDuration: const Duration(minutes: 30),
+      totalCalories: 350,
+      workoutCount: 2,
+      statsBySport: {
+        'running': sportStats,
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardStatsProvider.overrideWith((ref) => Stream.value(stats)),
+        ],
+        child: const MaterialApp(home: StatsScreen()),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Breakdown by Sport'), findsOneWidget);
+    expect(find.text('RUNNING'), findsOneWidget);
+    expect(find.text('2 workouts (100%)'), findsOneWidget);
+    
+    final runningCard = find.ancestor(
+      of: find.text('RUNNING'),
+      matching: find.byType(Card),
+    ).first;
+    expect(find.descendant(of: runningCard, matching: find.text('30:00')), findsOneWidget);
   });
 }

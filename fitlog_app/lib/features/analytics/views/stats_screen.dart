@@ -84,6 +84,10 @@ class StatsScreen extends ConsumerWidget {
                       Colors.blue,
                       isFullWidth: true,
                     ),
+                    if (stats.statsBySport.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _buildSportBreakdownSection(context, stats.statsBySport),
+                    ],
                   ],
                 ),
                 loading: () => const Center(
@@ -798,6 +802,161 @@ class StatsScreen extends ConsumerWidget {
       isScrollControlled: true,
       builder: (context) =>
           _DayWorkoutsSheet(day: day, month: month, workouts: workouts),
+    );
+  }
+
+  Widget _buildSportBreakdownSection(
+    BuildContext context,
+    Map<String, AggregatedStats> statsBySport,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    int totalCount = 0;
+    statsBySport.forEach((_, s) => totalCount += s.workoutCount);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Breakdown by Sport',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...statsBySport.entries.map((entry) {
+          final sportId = entry.key;
+          final sportStats = entry.value;
+          final sportType = SportType.fromId(sportId);
+          final percentage = totalCount > 0 ? (sportStats.workoutCount / totalCount) : 0.0;
+
+          return Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: sportType.color.withOpacity(0.1),
+                        child: Icon(sportType.icon, color: sportType.color),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sportType.name.toUpperCase(),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            Text(
+                              '${sportStats.workoutCount} ${sportStats.workoutCount == 1 ? 'workout' : 'workouts'} (${(percentage * 100).toStringAsFixed(0)}%)',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: percentage,
+                      backgroundColor: colorScheme.surfaceVariant.withOpacity(0.3),
+                      color: sportType.color,
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Duration',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              sportStats.totalDuration.toHoursMinutesSeconds(),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (sportStats.totalDistanceMeters > 0)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Distance',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${(sportStats.totalDistanceMeters / 1000).toStringAsFixed(2)} km',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Calories',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${sportStats.totalCalories.toInt()} kcal',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 }
