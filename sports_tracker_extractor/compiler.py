@@ -15,17 +15,24 @@ SPORTS_TRACKER_ACTIVITY_MAP = {
     0: "walking",
     1: "running",
     2: "cycling",
-    3: "mountain_biking",
-    4: "cross_country_skiing",
-    5: "other_1",
-    6: "other_1",
+    3: "cross_country_skiing",
+    10: "mountain_biking",
     11: "hiking",
-    12: "swimming",
+    12: "roller_skating",
     13: "alpine_skiing",
-    14: "rowing",
+    14: "paddling",
     15: "rowing",
-    23: "treadmill",
-    24: "indoor_cycling",
+    16: "golf",
+    17: "indoor",
+    18: "parkour",
+    19: "ball_games",
+    20: "outdoor_gym",
+    21: "swimming",
+    22: "trail_running",
+    23: "gym",
+    24: "nordic_walking",
+    25: "horseback_riding",
+    26: "motorsports",
 }
 
 # Standard MET (Metabolic Equivalent of Task) values for calorie calculations
@@ -383,15 +390,25 @@ def compile_gpx_to_json(data_dir, output_file):
         except Exception as e:
             print(f"  Error parsing {file_name}: {e}")
 
-    # Build the schema-compliant FitLog import package
-    export_structure = {
-        "version": 1,
-        "exportedAt": datetime.now(timezone.utc).isoformat(),
-        "workouts": compiled_workouts,
-    }
-
+    # Build the schema-compliant FitLog import package in JSON Lines (JSONL) format
+    # to support streaming and prevent Out of Memory errors on mobile devices.
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(export_structure, f, indent=2)
+        # 1. Write the metadata line
+        metadata = {
+            "type": "metadata",
+            "version": 1,
+            "exportedAt": datetime.now(timezone.utc).isoformat(),
+            "settings": {}
+        }
+        f.write(json.dumps(metadata) + "\n")
+        
+        # 2. Write each workout as its own JSON line
+        for workout in compiled_workouts:
+            workout_line = {
+                "type": "workout",
+                "data": workout
+            }
+            f.write(json.dumps(workout_line) + "\n")
 
-    print(f"Compilation finished. Compiled {len(compiled_workouts)} workouts in '{output_file}'.")
+    print(f"Compilation finished. Compiled {len(compiled_workouts)} workouts in JSON Lines format in '{output_file}'.")
     return True

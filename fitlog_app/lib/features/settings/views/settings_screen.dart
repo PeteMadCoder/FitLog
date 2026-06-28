@@ -174,9 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (result != null && result.files.single.path != null) {
         final file = File(result.files.single.path!);
-        final bytes = await file.readAsBytes();
-        final content = utf8.decode(bytes, allowMalformed: true);
-        await ref.read(backupServiceProvider).importFromJson(content);
+        await ref.read(backupServiceProvider).importFromFile(file);
         
         // Reset initialization so the profile form re-reads settings from provider
         setState(() {

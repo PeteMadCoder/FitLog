@@ -177,6 +177,139 @@ class BackupService {
     return jsonEncode(exportData);
   }
 
+  /// Decodes and imports database backup from a File object.
+  /// If it is a large JSON Lines (.jsonl) file, it is processed as a stream
+  /// to prevent Out of Memory errors on mobile devices.
+  Future<void> importFromFile(File file) async {
+    final isJsonl = file.path.toLowerCase().endsWith('.jsonl') || 
+                    await _isJsonlFile(file);
+
+    if (isJsonl) {
+      await _importFromJsonlStream(file);
+    } else {
+      final bytes = await file.readAsBytes();
+      final content = utf8.decode(bytes, allowMalformed: true);
+      await importFromJson(content);
+    }
+  }
+
+  Future<bool> _isJsonlFile(File file) async {
+    try {
+      final stream = file.openRead();
+      final firstLine = await stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .first;
+      final decoded = jsonDecode(firstLine);
+      return decoded is Map && decoded.containsKey('type');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _importFromJsonlStream(File file) async {
+    final stream = file.openRead();
+    final lines = stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+
+    final List<Workout> batchWorkouts = [];
+    final List<List<GpsPoint>> batchGps = [];
+    final List<List<SensorData>> batchSensors = [];
+    const int batchSize = 100;
+
+    await for (final line in lines) {
+      if (line.trim().isEmpty) continue;
+      
+      Map<String, dynamic> parsedLine;
+      try {
+        parsedLine = jsonDecode(line) as Map<String, dynamic>;
+      } catch (_) {
+        continue;
+      }
+
+      final type = parsedLine['type'] as String?;
+      if (type == 'metadata') {
+        if (parsedLine.containsKey('settings')) {
+          final settingsJson = parsedLine['settings'] as Map<String, dynamic>;
+          final settings = UserSettings.fromJson(settingsJson);
+          await _ref.read(settingsStateProvider.notifier).importSettings(settings);
+        }
+        continue;
+      }
+      
+      if (type == 'workout') {
+        final workoutJson = parsedLine['data'] as Map<String, dynamic>;
+        final startTime = DateTime.parse(workoutJson['startTime'] as String);
+
+        final exists = await workoutExistsAt(startTime);
+        if (exists) {
+          continue;
+        }
+
+        final workout = Workout()
+          ..name = workoutJson['name'] as String?
+          ..sportType = workoutJson['sportType'] as String? ?? 'running'
+          ..startTime = startTime
+          ..endTime = workoutJson['endTime'] != null ? DateTime.parse(workoutJson['endTime'] as String) : null
+          ..durationSeconds = (workoutJson['durationSeconds'] as num?)?.toDouble() ?? 0.0
+          ..distanceMeters = (workoutJson['distanceMeters'] as num?)?.toDouble() ?? 0.0
+          ..averageSpeed = (workoutJson['averageSpeed'] as num?)?.toDouble()
+          ..maxSpeed = (workoutJson['maxSpeed'] as num?)?.toDouble()
+          ..elevationGain = (workoutJson['elevationGain'] as num?)?.toDouble()
+          ..elevationLoss = (workoutJson['elevationLoss'] as num?)?.toDouble()
+          ..averageHeartRate = (workoutJson['averageHeartRate'] as num?)?.toDouble()
+          ..maxHeartRate = (workoutJson['maxHeartRate'] as num?)?.toDouble()
+          ..calories = (workoutJson['calories'] as num?)?.toDouble()
+          ..isCompleted = workoutJson['isCompleted'] as bool? ?? false;
+
+        final List<GpsPoint> gpsPointsList = [];
+        if (workoutJson.containsKey('gpsPoints')) {
+          final gpsList = workoutJson['gpsPoints'] as List<dynamic>;
+          for (final gpsRaw in gpsList) {
+            final gpsMap = gpsRaw as Map<String, dynamic>;
+            final gpsPoint = GpsPoint()
+              ..timestamp = DateTime.parse(gpsMap['timestamp'] as String)
+              ..latitude = (gpsMap['latitude'] as num).toDouble()
+              ..longitude = (gpsMap['longitude'] as num).toDouble()
+              ..altitude = (gpsMap['altitude'] as num?)?.toDouble()
+              ..accuracy = (gpsMap['accuracy'] as num?)?.toDouble()
+              ..speed = (gpsMap['speed'] as num?)?.toDouble();
+            gpsPointsList.add(gpsPoint);
+          }
+        }
+
+        final List<SensorData> sensorDataList = [];
+        if (workoutJson.containsKey('sensorData')) {
+          final sensorList = workoutJson['sensorData'] as List<dynamic>;
+          for (final sRaw in sensorList) {
+            final sMap = sRaw as Map<String, dynamic>;
+            final sensor = SensorData()
+              ..timestamp = DateTime.parse(sMap['timestamp'] as String)
+              ..sensorType = sMap['sensorType'] as String? ?? 'heart_rate'
+              ..value = (sMap['value'] as num).toDouble();
+            sensorDataList.add(sensor);
+          }
+        }
+
+        batchWorkouts.add(workout);
+        batchGps.add(gpsPointsList);
+        batchSensors.add(sensorDataList);
+
+        if (batchWorkouts.length >= batchSize) {
+          await saveImportedWorkouts(batchWorkouts, batchGps, batchSensors);
+          batchWorkouts.clear();
+          batchGps.clear();
+          batchSensors.clear();
+        }
+      }
+    }
+
+    if (batchWorkouts.isNotEmpty) {
+      await saveImportedWorkouts(batchWorkouts, batchGps, batchSensors);
+    }
+  }
+
   /// Imports all workouts and settings from a JSON string.
   /// Overwrites settings, and appends workouts that do not exist (matching by startTime).
   Future<void> importFromJson(String jsonString) async {
