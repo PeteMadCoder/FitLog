@@ -2,8 +2,6 @@
 
 ## Fitlog app
 
-In the tracking page, the dropdown, should show above all other activities the last 5 activities done, so that the user can identify more easily their most common activities (with that said, keep these activities in the full list still)
-
 In the stats page, keep the all part as is. However, the other fields, in the week, show the current week as a mini calendar (like the diary calendar part, however just for the current week, not the previous 7 days, current week), same for the previous month and year I would like it to show the current timeline, not exactly the previous 7, 30 or 365 days. Also, I would like to se micro calendars for all of them. Addicionally, I would like to be able to go through the weeks, months and years (back and forth).
 
 Dark mode.

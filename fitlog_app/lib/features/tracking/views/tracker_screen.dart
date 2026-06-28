@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_notifier.dart';
 import 'package:fitlog_app/features/tracking/providers/tracking_state.dart';
 import 'package:fitlog_app/features/tracking/models/sport_type.dart';
+import 'package:fitlog_app/features/tracking/providers/recent_sports_provider.dart';
 import 'active_workout_screen.dart';
 
 /// Screen displayed when the Tracker tab is selected.
@@ -195,16 +196,28 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
   }
 }
 
-class SportPickerSheet extends StatefulWidget {
+class SportPickerSheet extends ConsumerStatefulWidget {
   final SportType initialSport;
 
-  const SportPickerSheet({required this.initialSport});
+  const SportPickerSheet({super.key, required this.initialSport});
 
   @override
-  State<SportPickerSheet> createState() => _SportPickerSheetState();
+  ConsumerState<SportPickerSheet> createState() => _SportPickerSheetState();
 }
 
-class _SportPickerSheetState extends State<SportPickerSheet> {
+enum _PickerItemType { header, sport, divider }
+
+class _PickerItem {
+  final _PickerItemType type;
+  final String? title;
+  final SportType? sport;
+
+  _PickerItem.header(this.title) : type = _PickerItemType.header, sport = null;
+  _PickerItem.sport(this.sport) : type = _PickerItemType.sport, title = null;
+  _PickerItem.divider() : type = _PickerItemType.divider, title = null, sport = null;
+}
+
+class _SportPickerSheetState extends ConsumerState<SportPickerSheet> {
   late final TextEditingController _searchController;
   List<SportType> _filteredSports = SportType.all;
 
@@ -235,130 +248,181 @@ class _SportPickerSheetState extends State<SportPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final recentSportsAsync = ref.watch(recentSportsProvider);
+    final recentSports = recentSportsAsync.value ?? const [];
+
+    // Construct picker items
+    final List<_PickerItem> items = [];
+    if (_searchController.text.isEmpty && recentSports.isNotEmpty) {
+      items.add(_PickerItem.header('Recent Activities'));
+      for (final sport in recentSports) {
+        items.add(_PickerItem.sport(sport));
+      }
+      items.add(_PickerItem.divider());
+      items.add(_PickerItem.header('All Activities'));
+    }
+
+    if (_filteredSports.isNotEmpty) {
+      for (final sport in _filteredSports) {
+        items.add(_PickerItem.sport(sport));
+      }
+    }
+
     return Material(
       color: theme.colorScheme.surface,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.75,
         child: Column(
-        children: [
-          const SizedBox(height: 12),
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Select Sport',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search sports...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          children: [
+            const SizedBox(height: 12),
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
               ),
-              onChanged: _onSearchChanged,
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: _filteredSports.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No sports found',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withOpacity(0.6),
-                          ),
-                        ),
-                      ],
+            const SizedBox(height: 16),
+            Text(
+              'Select Sport',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search sports...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.outlineVariant,
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: _filteredSports.length,
-                    itemBuilder: (context, index) {
-                      final sport = _filteredSports[index];
-                      final isSelected = sport.id == widget.initialSport.id;
-                      return ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? theme.colorScheme.primary.withOpacity(0.12)
-                                : theme.colorScheme.surfaceVariant
-                                    .withOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            sport.icon,
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                            size: 20,
-                          ),
-                        ),
-                        title: Text(
-                          sport.name,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : null,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? Icon(Icons.check,
-                                color: theme.colorScheme.primary)
-                            : null,
-                        onTap: () {
-                          Navigator.pop(context, sport);
-                        },
-                      );
-                    },
                   ),
-          ),
-        ],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
+                onChanged: _onSearchChanged,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: items.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No sports found',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+
+                        switch (item.type) {
+                          case _PickerItemType.header:
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                right: 16.0,
+                                top: 16.0,
+                                bottom: 8.0,
+                              ),
+                              child: Text(
+                                item.title!.toUpperCase(),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            );
+
+                          case _PickerItemType.divider:
+                            return const Divider(
+                              height: 16,
+                              indent: 16,
+                              endIndent: 16,
+                            );
+
+                          case _PickerItemType.sport:
+                            final sport = item.sport!;
+                            final isSelected = sport.id == widget.initialSport.id;
+                            return ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? theme.colorScheme.primary.withOpacity(0.12)
+                                      : theme.colorScheme.surfaceVariant
+                                          .withOpacity(0.3),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  sport.icon,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(
+                                sport.name,
+                                style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : null,
+                                ),
+                              ),
+                              trailing: isSelected
+                                  ? Icon(Icons.check,
+                                      color: theme.colorScheme.primary)
+                                  : null,
+                              onTap: () {
+                                Navigator.pop(context, sport);
+                              },
+                            );
+                        }
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
-}
+

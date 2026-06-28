@@ -9,6 +9,8 @@ import 'package:fitlog_app/features/tracking/models/gps_point.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/tracking/models/sensor_data.dart';
 import 'package:fitlog_app/app/app_providers.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
+import 'package:fitlog_app/features/tracking/providers/recent_sports_provider.dart';
 import 'package:isar/isar.dart';
 
 // Mock implementations for testing views
@@ -177,12 +179,13 @@ void main() {
       fakeIsar = FakeIsar();
     });
 
-    Widget createTestWidget() {
+    Widget createTestWidget({List<SportType> recent = const []}) {
       return ProviderScope(
         overrides: [
           permissionServiceProvider.overrideWithValue(fakePermission),
           gpsServiceProvider.overrideWithValue(fakeGps),
           isarProvider.overrideWith((ref) => fakeIsar),
+          recentSportsProvider.overrideWith((ref) => Stream.value(recent)),
         ],
         child: const MaterialApp(home: TrackerScreen()),
       );
@@ -293,5 +296,39 @@ void main() {
         expect(find.text('Discard'), findsOneWidget);
       },
     );
+
+    testWidgets('SportPickerSheet displays recent sports and divider when recent sports exist', (
+      WidgetTester tester,
+    ) async {
+      final recent = [
+        SportType.fromId('cycling'),
+        SportType.fromId('walking'),
+      ];
+
+      await tester.pumpWidget(createTestWidget(recent: recent));
+      await tester.pumpAndSettle();
+
+      // Open bottom sheet
+      await tester.tap(find.text('Tap to change sport'));
+      await tester.pumpAndSettle();
+
+      // Verify that "Recent Activities" header is displayed
+      expect(find.text('RECENT ACTIVITIES'), findsOneWidget);
+
+      // Verify that "All Activities" header is displayed
+      expect(find.text('ALL ACTIVITIES'), findsOneWidget);
+
+      // Verify that recent sports are shown
+      expect(find.text('Cycling'), findsAtLeastNWidgets(1));
+      expect(find.text('Walking'), findsAtLeastNWidgets(1));
+
+      // Tap on Cycling
+      await tester.tap(find.text('Cycling').first);
+      await tester.pumpAndSettle();
+
+      // Verify selection update
+      expect(find.text('Select Sport'), findsNothing);
+      expect(find.text('Cycling'), findsOneWidget);
+    });
   });
 }
