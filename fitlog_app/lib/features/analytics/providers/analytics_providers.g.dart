@@ -173,7 +173,7 @@ class _WorkoutDetailProviderElement
   int get id => (origin as WorkoutDetailProvider).id;
 }
 
-String _$dashboardStatsHash() => r'11000863f6b3901389d44424305527f9fdebf35e';
+String _$dashboardStatsHash() => r'f8a768a95c85dcfa4d0ec85e7c1b4b4e4fa1652b';
 
 /// Provider that aggregates workout data based on the selected timeframe.
 ///
@@ -191,6 +191,23 @@ final dashboardStatsProvider =
 );
 
 typedef DashboardStatsRef = AutoDisposeStreamProviderRef<AggregatedStats>;
+String _$statsWorkoutsHash() => r'ed3d82a209344055943afc2ae66daeb29cc58b74';
+
+/// Provider exposing workouts for the selected timeframe.
+///
+/// Copied from [statsWorkouts].
+@ProviderFor(statsWorkouts)
+final statsWorkoutsProvider = AutoDisposeStreamProvider<List<Workout>>.internal(
+  statsWorkouts,
+  name: r'statsWorkoutsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$statsWorkoutsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef StatsWorkoutsRef = AutoDisposeStreamProviderRef<List<Workout>>;
 String _$latestWorkoutHash() => r'241e35e78f1c2e694abab8ba46cb80487a3d92a1';
 
 /// Provider exposing the most recent completed workout.
@@ -267,7 +284,7 @@ final workoutEditorProvider =
 
 typedef _$WorkoutEditor = AutoDisposeNotifier<void>;
 String _$selectedStatsTimeframeHash() =>
-    r'8d6d05b048d97a49b635b1d1158f3cedb36e4139';
+    r'ce091ae81f0ffc395c222eaa072da85903a42c21';
 
 /// Provider to track the selected timeframe for statistics.
 ///
@@ -285,5 +302,24 @@ final selectedStatsTimeframeProvider = AutoDisposeNotifierProvider<
 );
 
 typedef _$SelectedStatsTimeframe = AutoDisposeNotifier<StatsTimeframe>;
+String _$statsReferenceDateHash() =>
+    r'6c2caf22e89f3d54f288df1a1c04e948aeb23e75';
+
+/// Provider to track the reference date for pagination back/forth in statistics.
+///
+/// Copied from [StatsReferenceDate].
+@ProviderFor(StatsReferenceDate)
+final statsReferenceDateProvider =
+    AutoDisposeNotifierProvider<StatsReferenceDate, DateTime>.internal(
+  StatsReferenceDate.new,
+  name: r'statsReferenceDateProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$statsReferenceDateHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$StatsReferenceDate = AutoDisposeNotifier<DateTime>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

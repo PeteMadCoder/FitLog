@@ -96,7 +96,63 @@ class SelectedStatsTimeframe extends _$SelectedStatsTimeframe {
   @override
   StatsTimeframe build() => StatsTimeframe.weekly;
 
-  void setTimeframe(StatsTimeframe timeframe) => state = timeframe;
+  void setTimeframe(StatsTimeframe timeframe) {
+    state = timeframe;
+    ref.read(statsReferenceDateProvider.notifier).reset();
+  }
+}
+
+/// Provider to track the reference date for pagination back/forth in statistics.
+@riverpod
+class StatsReferenceDate extends _$StatsReferenceDate {
+  @override
+  DateTime build() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  void next() {
+    final timeframe = ref.read(selectedStatsTimeframeProvider);
+    switch (timeframe) {
+      case StatsTimeframe.weekly:
+        state = state.add(const Duration(days: 7));
+        break;
+      case StatsTimeframe.monthly:
+        final current1st = DateTime(state.year, state.month, 1);
+        final next1st = DateTime(current1st.year, current1st.month + 1, 1);
+        state = next1st;
+        break;
+      case StatsTimeframe.yearly:
+        state = DateTime(state.year + 1, 1, 1);
+        break;
+      case StatsTimeframe.allTime:
+        break;
+    }
+  }
+
+  void previous() {
+    final timeframe = ref.read(selectedStatsTimeframeProvider);
+    switch (timeframe) {
+      case StatsTimeframe.weekly:
+        state = state.subtract(const Duration(days: 7));
+        break;
+      case StatsTimeframe.monthly:
+        final current1st = DateTime(state.year, state.month, 1);
+        final prev1st = DateTime(current1st.year, current1st.month - 1, 1);
+        state = prev1st;
+        break;
+      case StatsTimeframe.yearly:
+        state = DateTime(state.year - 1, 1, 1);
+        break;
+      case StatsTimeframe.allTime:
+        break;
+    }
+  }
+
+  void reset() {
+    final now = DateTime.now();
+    state = DateTime(now.year, now.month, now.day);
+  }
 }
 
 /// Provider that aggregates workout data based on the selected timeframe.
@@ -104,31 +160,37 @@ class SelectedStatsTimeframe extends _$SelectedStatsTimeframe {
 Stream<AggregatedStats> dashboardStats(DashboardStatsRef ref) async* {
   final isar = await ref.watch(isarProvider.future);
   final timeframe = ref.watch(selectedStatsTimeframeProvider);
+  final refDate = ref.watch(statsReferenceDateProvider);
 
-  final now = DateTime.now();
+  final now = refDate;
   DateTime? startDate;
+  DateTime? endDate;
 
   switch (timeframe) {
     case StatsTimeframe.weekly:
       // Start of current week (Monday)
       startDate = now.subtract(Duration(days: now.weekday - 1));
       startDate = DateTime(startDate.year, startDate.month, startDate.day);
+      endDate = startDate.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
       break;
     case StatsTimeframe.monthly:
       startDate = DateTime(now.year, now.month, 1);
+      endDate = DateTime(now.year, now.month + 1, 1).subtract(const Duration(milliseconds: 1));
       break;
     case StatsTimeframe.yearly:
       startDate = DateTime(now.year, 1, 1);
+      endDate = DateTime(now.year + 1, 1, 1).subtract(const Duration(milliseconds: 1));
       break;
     case StatsTimeframe.allTime:
       startDate = null;
+      endDate = null;
       break;
   }
 
-  if (startDate != null) {
+  if (startDate != null && endDate != null) {
     yield* isar.workouts
         .filter()
-        .startTimeGreaterThan(startDate)
+        .startTimeBetween(startDate, endDate)
         .watch(fireImmediately: true)
         .map((workouts) {
           return _aggregateWorkouts(workouts);
@@ -137,6 +199,51 @@ Stream<AggregatedStats> dashboardStats(DashboardStatsRef ref) async* {
     yield* isar.workouts.where().watch(fireImmediately: true).map((workouts) {
       return _aggregateWorkouts(workouts);
     });
+  }
+}
+
+/// Provider exposing workouts for the selected timeframe.
+@riverpod
+Stream<List<Workout>> statsWorkouts(StatsWorkoutsRef ref) async* {
+  final isar = await ref.watch(isarProvider.future);
+  final timeframe = ref.watch(selectedStatsTimeframeProvider);
+  final refDate = ref.watch(statsReferenceDateProvider);
+
+  final now = refDate;
+  DateTime? startDate;
+  DateTime? endDate;
+
+  switch (timeframe) {
+    case StatsTimeframe.weekly:
+      startDate = now.subtract(Duration(days: now.weekday - 1));
+      startDate = DateTime(startDate.year, startDate.month, startDate.day);
+      endDate = startDate.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
+      break;
+    case StatsTimeframe.monthly:
+      startDate = DateTime(now.year, now.month, 1);
+      endDate = DateTime(now.year, now.month + 1, 1).subtract(const Duration(milliseconds: 1));
+      break;
+    case StatsTimeframe.yearly:
+      startDate = DateTime(now.year, 1, 1);
+      endDate = DateTime(now.year + 1, 1, 1).subtract(const Duration(milliseconds: 1));
+      break;
+    case StatsTimeframe.allTime:
+      startDate = null;
+      endDate = null;
+      break;
+  }
+
+  if (startDate != null && endDate != null) {
+    yield* isar.workouts
+        .filter()
+        .startTimeBetween(startDate, endDate)
+        .sortByStartTimeDesc()
+        .watch(fireImmediately: true);
+  } else {
+    yield* isar.workouts
+        .where()
+        .sortByStartTimeDesc()
+        .watch(fireImmediately: true);
   }
 }
 
