@@ -11,10 +11,3 @@ Dark mode.
 Localize strings (i18n) and allow users to choose language in the settings tab.
 
 Auto-pause logic (still need to look into this).
-
-
-## Sports Tracker Extractor
-
-For some reason, the workout's name is being saved as the data. This is due to the fact that the workout's actual name being stored in the gpx's description field. You need to check how the application imports a single GPX file to fully understand where the name actually resides.
-
-Check better the mappings of the workouts to their types, there are still a couple that are not being correctly translated and falling on defaults.
