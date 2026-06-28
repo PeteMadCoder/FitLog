@@ -143,7 +143,12 @@ def compile_gpx_to_json(data_dir, output_file):
                     except (ValueError, TypeError):
                         pass
 
-                track_name = meta_workout.get("name") or meta_workout.get("title") or f"Imported {sport_type.capitalize()}"
+                track_name = (
+                    meta_workout.get("description") or
+                    meta_workout.get("name") or
+                    meta_workout.get("title") or
+                    f"Imported {sport_type.capitalize()}"
+                )
                 tracks_to_process = [DummyTrack(track_name, sport_type)]
 
             for track in tracks_to_process:
@@ -358,11 +363,24 @@ def compile_gpx_to_json(data_dir, output_file):
                 elif track and track.type:
                     sport_type = parse_sport_type(track.type)
 
-                # Build name
+                # Build name prioritizing GPX descriptions/names and Sports Tracker metadata description
+                gpx_desc = getattr(track, 'description', None) or (gpx.description if gpx else None)
+                gpx_name = getattr(track, 'name', None) or (gpx.name if gpx else None)
+
+                # Clean strings
+                gpx_desc = gpx_desc.strip() if gpx_desc else None
+                gpx_name = gpx_name.strip() if gpx_name else None
+
+                meta_desc = meta_workout.get("description").strip() if (meta_workout and meta_workout.get("description")) else None
+                meta_name = (meta_workout.get("name") or meta_workout.get("title")) if meta_workout else None
+                if meta_name:
+                    meta_name = meta_name.strip()
+
                 workout_name = (
-                    (meta_workout.get("name") if meta_workout else None) or
-                    (meta_workout.get("title") if meta_workout else None) or
-                    track.name or
+                    gpx_desc or
+                    meta_desc or
+                    meta_name or
+                    gpx_name or
                     f"Imported {sport_type.capitalize()}"
                 )
 
