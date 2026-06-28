@@ -38,9 +38,8 @@ class _CalendarGrid extends ConsumerWidget {
     final firstDayOfMonth = DateTime(month.year, month.month, 1);
     final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
 
-    // Adjust to start on Monday (1 = Monday, 7 = Sunday)
-    // firstDayOfMonth.weekday: 1=Mon, ..., 7=Sun
-    final leadingEmptyDays = firstDayOfMonth.weekday - 1;
+    // Adjust to start on Sunday
+    final leadingEmptyDays = firstDayOfMonth.weekday % 7;
     final daysInMonth = lastDayOfMonth.day;
 
     final monthName = _getMonthName(month.month);
@@ -91,7 +90,7 @@ class _CalendarGrid extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+              children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
                   .map(
                     (day) => Expanded(
                       child: Center(

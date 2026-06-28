@@ -168,8 +168,8 @@ Stream<AggregatedStats> dashboardStats(DashboardStatsRef ref) async* {
 
   switch (timeframe) {
     case StatsTimeframe.weekly:
-      // Start of current week (Monday)
-      startDate = now.subtract(Duration(days: now.weekday - 1));
+      // Start of current week (Sunday)
+      startDate = now.subtract(Duration(days: now.weekday % 7));
       startDate = DateTime(startDate.year, startDate.month, startDate.day);
       endDate = startDate.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
       break;
@@ -215,7 +215,7 @@ Stream<List<Workout>> statsWorkouts(StatsWorkoutsRef ref) async* {
 
   switch (timeframe) {
     case StatsTimeframe.weekly:
-      startDate = now.subtract(Duration(days: now.weekday - 1));
+      startDate = now.subtract(Duration(days: now.weekday % 7));
       startDate = DateTime(startDate.year, startDate.month, startDate.day);
       endDate = startDate.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
       break;
@@ -293,8 +293,8 @@ Stream<WeeklyActivitySummary> weeklyActivitySummary(
   final isar = await ref.watch(isarProvider.future);
   final now = DateTime.now();
 
-  // Start of current week (Monday)
-  DateTime startDate = now.subtract(Duration(days: now.weekday - 1));
+  // Start of current week (Sunday)
+  DateTime startDate = now.subtract(Duration(days: now.weekday % 7));
   startDate = DateTime(startDate.year, startDate.month, startDate.day);
 
   yield* isar.workouts
@@ -361,8 +361,8 @@ WeeklyGoalProgress calculateWeeklyGoalProgress({
     );
   }
 
-  // Monday of current week
-  final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
+  // Sunday of current week
+  final currentWeekStart = now.subtract(Duration(days: now.weekday % 7));
   final startOfCurrentWeek = DateTime(currentWeekStart.year, currentWeekStart.month, currentWeekStart.day);
 
   double currentWeekSeconds = 0;
@@ -385,7 +385,7 @@ WeeklyGoalProgress calculateWeeklyGoalProgress({
     final currentWeekMet = currentWeekSeconds >= goalHours * 3600;
     
     // Check backwards from previous weeks
-    DateTime checkDate = startOfCurrentWeek.subtract(const Duration(days: 1)); // Sunday of last week
+    DateTime checkDate = startOfCurrentWeek.subtract(const Duration(days: 1)); // Saturday of last week
     
     bool streakBroken = false;
     
@@ -419,26 +419,15 @@ WeeklyGoalProgress calculateWeeklyGoalProgress({
 }
 
 String _getWeekId(DateTime date) {
-  // ISO 8601 week number logic
-  // A week starts on Monday. The first week of the year is the one that contains the first Thursday.
+  // A week starts on Sunday.
+  // Find Sunday of this week
+  final sunday = date.subtract(Duration(days: date.weekday % 7));
+  final year = sunday.year;
   
-  // Find Thursday of this week
-  final thursday = date.add(Duration(days: 4 - date.weekday));
-  
-  // The year of the week is the year of that Thursday
-  final year = thursday.year;
-  
-  // Find January 1st of that year
   final firstOfJan = DateTime(year, 1, 1);
+  final firstSunday = firstOfJan.subtract(Duration(days: firstOfJan.weekday % 7));
   
-  // Find the first Thursday of the year
-  final firstThursday = firstOfJan.add(Duration(days: (4 - firstOfJan.weekday + 7) % 7));
-  
-  // The first week starts 3 days before the first Thursday
-  final firstMonday = firstThursday.subtract(const Duration(days: 3));
-  
-  // Week number is (days since first Monday) / 7 + 1
-  final weekNumber = (thursday.difference(firstMonday).inDays / 7).floor() + 1;
+  final weekNumber = (sunday.difference(firstSunday).inDays / 7).floor() + 1;
   
   return '$year-W${weekNumber.toString().padLeft(2, '0')}';
 }
