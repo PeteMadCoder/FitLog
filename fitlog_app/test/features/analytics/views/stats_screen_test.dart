@@ -176,7 +176,7 @@ void main() {
     await binding.setSurfaceSize(null);
   });
 
-  testWidgets('StatsScreen displays yearly heatmap when timeframe is yearly', (tester) async {
+  testWidgets('StatsScreen displays yearly monthly calendars grid when timeframe is yearly', (tester) async {
     final stats = AggregatedStats(
       totalDistanceMeters: 3000,
       totalDuration: const Duration(minutes: 30),
@@ -204,7 +204,69 @@ void main() {
     // Yearly header: "Year 2026"
     expect(find.text('Year 2026'), findsOneWidget);
     
-    // Heatmap title
-    expect(find.text('Activity Heatmap'), findsOneWidget);
+    // Month abbreviations should be rendered
+    expect(find.text('Jan'), findsOneWidget);
+    expect(find.text('Dec'), findsOneWidget);
+  });
+
+  testWidgets('StatsScreen displays yearly monthly calendars and tapping a day with workouts shows bottom sheet', (tester) async {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    await binding.setSurfaceSize(const Size(800, 1200));
+
+    final stats = AggregatedStats(
+      totalDistanceMeters: 3000,
+      totalDuration: const Duration(minutes: 30),
+      totalCalories: 300,
+      workoutCount: 3,
+    );
+
+    final mockRefDate = DateTime(2026, 6, 28);
+    final mockWorkout = Workout()
+      ..id = 123
+      ..sportType = 'cycling'
+      ..startTime = DateTime(2026, 6, 28, 10, 0)
+      ..durationSeconds = 1800
+      ..distanceMeters = 10000;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardStatsProvider.overrideWith((ref) => Stream.value(stats)),
+          selectedStatsTimeframeProvider.overrideWith(() => FakeSelectedStatsTimeframe(StatsTimeframe.yearly)),
+          statsReferenceDateProvider.overrideWith(() => FakeStatsReferenceDate(mockRefDate)),
+          statsWorkoutsProvider.overrideWith((ref) => Stream.value([mockWorkout])),
+        ],
+        child: const MaterialApp(home: StatsScreen()),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    // Verify 'Jun' is visible
+    expect(find.text('Jun'), findsOneWidget);
+
+    // Find day 28 within the grid or subtree of month 'Jun'
+    // Since day '28' is rendered in both June and other months, we find all '28' widgets.
+    // June is month 6. We can filter the finder using descendant of the Column that contains 'Jun'.
+    final juneFinder = find.ancestor(
+      of: find.text('Jun'),
+      matching: find.byType(Column),
+    ).first;
+
+    final day28Finder = find.descendant(
+      of: juneFinder,
+      matching: find.text('28'),
+    );
+
+    // Tap on the day number 28 inside June
+    await tester.tap(day28Finder);
+    await tester.pumpAndSettle();
+
+    // Verify bottom sheet works
+    expect(find.text('Workouts on 28 June'), findsOneWidget);
+    expect(find.text('CYCLING'), findsOneWidget);
+
+    await binding.setSurfaceSize(null);
   });
 }

@@ -618,16 +618,23 @@ class StatsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final startOfYear = DateTime(refDate.year, 1, 1);
-    final endOfYear = DateTime(refDate.year, 12, 31);
-    final gridStartDate = startOfYear.subtract(Duration(days: startOfYear.weekday % 7));
-    final maxDiffDays = endOfYear.difference(gridStartDate).inDays;
-    final totalCols = (maxDiffDays ~/ 7) + 1;
-
-    final Map<String, List<Workout>> workoutsByDateStr = {};
-    for (final w in workouts) {
-      final dateStr = '${w.startTime.year}-${w.startTime.month}-${w.startTime.day}';
-      workoutsByDateStr.putIfAbsent(dateStr, () => []).add(w);
+    final rows = <Widget>[];
+    for (int i = 0; i < 12; i += 3) {
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildYearlyMonthCalendar(context, i + 1, refDate, workouts)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildYearlyMonthCalendar(context, i + 2, refDate, workouts)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildYearlyMonthCalendar(context, i + 3, refDate, workouts)),
+          ],
+        ),
+      );
+      if (i < 9) {
+        rows.add(const SizedBox(height: 16));
+      }
     }
 
     return Card(
@@ -639,131 +646,132 @@ class StatsScreen extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Activity Heatmap',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  // Weekdays label column
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: ['S', 'T', 'T', 'S']
-                        .map(
-                          (d) => Padding(
-                            padding: const EdgeInsets.only(right: 8.0, bottom: 6.0),
-                            child: Text(
-                              d,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.4),
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  // Grid itself
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: List.generate(totalCols, (col) {
-                          return Column(
-                            children: List.generate(7, (row) {
-                              final cellDate = gridStartDate.add(Duration(days: col * 7 + row));
-                              final isWithinYear = cellDate.year == refDate.year;
-                              
-                              if (!isWithinYear) {
-                                return const SizedBox(
-                                  width: 13,
-                                  height: 13,
-                                );
-                              }
-
-                              final dateStr = '${cellDate.year}-${cellDate.month}-${cellDate.day}';
-                              final dayWorkouts = workoutsByDateStr[dateStr] ?? [];
-                              final hasWorkouts = dayWorkouts.isNotEmpty;
-                              
-                              Color cellColor = colorScheme.surfaceVariant.withOpacity(0.2);
-                              if (hasWorkouts) {
-                                final sportColor = SportType.fromId(dayWorkouts.first.sportType).color;
-                                cellColor = sportColor.withOpacity(
-                                  dayWorkouts.length == 1 ? 0.4 : (dayWorkouts.length == 2 ? 0.7 : 1.0)
-                                );
-                              }
-
-                              final isToday = _isToday(cellDate);
-
-                              return Container(
-                                width: 10,
-                                height: 10,
-                                margin: const EdgeInsets.all(1.5),
-                                decoration: BoxDecoration(
-                                  color: cellColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: isToday
-                                      ? Border.all(color: colorScheme.primary, width: 1)
-                                      : null,
-                                ),
-                              );
-                            }),
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Legend
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Less',
-                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 8, color: colorScheme.onSurface.withOpacity(0.5)),
-                ),
-                const SizedBox(width: 4),
-                _buildLegendBox(colorScheme.surfaceVariant.withOpacity(0.2)),
-                _buildLegendBox(colorScheme.primary.withOpacity(0.4)),
-                _buildLegendBox(colorScheme.primary.withOpacity(0.7)),
-                _buildLegendBox(colorScheme.primary.withOpacity(1.0)),
-                const SizedBox(width: 4),
-                Text(
-                  'More',
-                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 8, color: colorScheme.onSurface.withOpacity(0.5)),
-                ),
-              ],
-            )
-          ],
+          children: rows,
         ),
       ),
     );
   }
 
-  Widget _buildLegendBox(Color color) {
-    return Container(
-      width: 8,
-      height: 8,
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(1.5),
-      ),
+  Widget _buildYearlyMonthCalendar(
+    BuildContext context,
+    int monthNum,
+    DateTime refDate,
+    List<Workout> workouts,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final monthName = _getMonthAbbreviation(monthNum);
+
+    final firstDayOfMonth = DateTime(refDate.year, monthNum, 1);
+    final lastDayOfMonth = DateTime(refDate.year, monthNum + 1, 0);
+    final leadingEmptyDays = firstDayOfMonth.weekday % 7;
+    final daysInMonth = lastDayOfMonth.day;
+
+    final workoutsByDay = <int, List<Workout>>{};
+    for (final workout in workouts) {
+      if (workout.startTime.month == monthNum) {
+        final day = workout.startTime.day;
+        workoutsByDay.putIfAbsent(day, () => []).add(workout);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4.0, left: 2.0),
+          child: Text(
+            monthName,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+              .map(
+                (day) => Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 6,
+                        color: colorScheme.onSurface.withOpacity(0.4),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 2),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            mainAxisSpacing: 3,
+            crossAxisSpacing: 3,
+          ),
+          itemCount: leadingEmptyDays + daysInMonth,
+          itemBuilder: (context, index) {
+            if (index < leadingEmptyDays) {
+              return const SizedBox.shrink();
+            }
+
+            final day = index - leadingEmptyDays + 1;
+            final dayWorkouts = workoutsByDay[day] ?? [];
+            final hasWorkouts = dayWorkouts.isNotEmpty;
+            final dayDate = DateTime(refDate.year, monthNum, day);
+            final isToday = _isToday(dayDate);
+
+            Color? cellColor;
+            if (isToday) {
+              cellColor = colorScheme.primaryContainer.withOpacity(0.5);
+            } else if (hasWorkouts) {
+              cellColor = SportType.fromId(dayWorkouts.first.sportType).color.withOpacity(0.3);
+            }
+
+            return InkWell(
+              onTap: hasWorkouts
+                  ? () => _showDayWorkouts(context, day, dayDate, dayWorkouts)
+                  : null,
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: cellColor,
+                  border: isToday
+                      ? Border.all(color: colorScheme.primary, width: 1)
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    day.toString(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 8,
+                      fontWeight: isToday || hasWorkouts
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isToday
+                          ? colorScheme.primary
+                          : hasWorkouts
+                              ? SportType.fromId(dayWorkouts.first.sportType).color
+                              : colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
