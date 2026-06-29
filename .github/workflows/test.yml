@@ -1,0 +1,43 @@
+name: FitLog CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run All Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create Python venv and Install Dependencies
+        run: |
+          python -m venv sports_tracker_extractor/venv
+          source sports_tracker_extractor/venv/bin/activate
+          pip install -r sports_tracker_extractor/requirements.txt
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.44.2'
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd fitlog_app
+          flutter pub get
+
+      - name: Run Tests Script
+        run: |
+          chmod +x run_tests.sh
+          ./run_tests.sh
