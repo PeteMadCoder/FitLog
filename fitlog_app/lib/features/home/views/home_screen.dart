@@ -6,6 +6,7 @@ import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
 import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 import 'package:fitlog_app/features/settings/views/settings_screen.dart';
+import 'package:fitlog_app/features/analytics/views/sport_workouts_screen.dart';
 
 /// Home Dashboard showing a summary of the last workout and weekly statistics.
 class HomeScreen extends ConsumerWidget {
@@ -347,56 +348,69 @@ class _WeeklySummaryList extends StatelessWidget {
   }
 }
 
-class _WeeklySportCard extends StatelessWidget {
+class _WeeklySportCard extends ConsumerWidget {
   final String sport;
   final AggregatedStats stats;
 
   const _WeeklySportCard({required this.sport, required this.stats});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final sportModel = SportType.fromId(sport);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Row(
-        children: [
-          Icon(sportModel.icon, color: sportModel.color),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sportModel.name.toUpperCase(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text('${stats.workoutCount} activities this week'),
-              ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          ref.read(selectedStatsTimeframeProvider.notifier).setTimeframe(StatsTimeframe.weekly);
+          ref.read(statsReferenceDateProvider.notifier).reset();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SportWorkoutsScreen(sportId: sport),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Text(
-                _formatDistance(stats.totalDistanceMeters),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Icon(sportModel.icon, color: sportModel.color),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sportModel.name.toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text('${stats.workoutCount} activities this week'),
+                  ],
+                ),
               ),
-              Text(stats.totalDuration.toHoursMinutesSeconds()),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatDistance(stats.totalDistanceMeters),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(stats.totalDuration.toHoursMinutesSeconds()),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
-
-
 
   String _formatDistance(double meters) {
     if (meters >= 1000) {
