@@ -29,6 +29,10 @@ class FakePermissionService implements PermissionService {
   Future<bool> requestBluetoothPermission() async => true;
   @override
   Future<bool> openSettings() async => true;
+  @override
+  Future<bool> hasIgnoreBatteryOptimizationsPermission() async => true;
+  @override
+  Future<bool> requestIgnoreBatteryOptimizationsPermission() async => true;
 }
 
 class FakeGpsService implements GpsService {

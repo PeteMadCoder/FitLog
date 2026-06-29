@@ -153,6 +153,12 @@ class TrackingNotifier extends _$TrackingNotifier {
       }
     }
 
+    final isIgnoringBattery =
+        await permissionService.hasIgnoreBatteryOptimizationsPermission();
+    if (!isIgnoringBattery) {
+      await permissionService.requestIgnoreBatteryOptimizationsPermission();
+    }
+
     final workout = Workout()
       ..sportType = sportType
       ..startTime = DateTime.now()
@@ -357,6 +363,9 @@ class TrackingNotifier extends _$TrackingNotifier {
   }
 
   void _onGpsPointReceived(GpsPoint point) {
+    if (point.accuracy == null || point.accuracy! > 35.0) {
+      return;
+    }
     final updatedPoints = List<GpsPoint>.from(state.gpsPoints)..add(point);
     double newDistance = state.distanceMeters;
     double newElevationGain = state.elevationGain;

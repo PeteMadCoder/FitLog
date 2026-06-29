@@ -40,6 +40,12 @@ class FakePermissionService implements PermissionService {
 
   @override
   Future<bool> openSettings() async => true;
+
+  @override
+  Future<bool> hasIgnoreBatteryOptimizationsPermission() async => true;
+
+  @override
+  Future<bool> requestIgnoreBatteryOptimizationsPermission() async => true;
 }
 
 class FakeGpsService implements GpsService {
@@ -418,6 +424,7 @@ void main() {
         ..longitude = -122.4194
         ..altitude = 100.0
         ..speed = 3.0
+        ..accuracy = 5.0
         ..timestamp = DateTime.now();
 
       notifier.processGpsPointForTesting(point1);
@@ -435,6 +442,7 @@ void main() {
         ..longitude = -122.4194
         ..altitude = 105.0
         ..speed = 4.0
+        ..accuracy = 5.0
         ..timestamp = DateTime.now();
 
       notifier.processGpsPointForTesting(point2);
@@ -497,6 +505,7 @@ void main() {
         ..longitude = -122.4194
         ..altitude = 100.0
         ..speed = 3.0
+        ..accuracy = 5.0
         ..timestamp = DateTime.now();
       notifier.processGpsPointForTesting(point);
 

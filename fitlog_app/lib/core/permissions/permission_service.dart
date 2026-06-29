@@ -72,6 +72,23 @@ class PermissionService {
   Future<bool> openSettings() async {
     return await openAppSettings();
   }
+
+  /// Check if the app is ignoring battery optimizations (Android-only).
+  Future<bool> hasIgnoreBatteryOptimizationsPermission() async {
+    if (Platform.isAndroid) {
+      return await Permission.ignoreBatteryOptimizations.isGranted;
+    }
+    return true;
+  }
+
+  /// Request the user to disable battery optimizations (Android-only).
+  Future<bool> requestIgnoreBatteryOptimizationsPermission() async {
+    if (Platform.isAndroid) {
+      final status = await Permission.ignoreBatteryOptimizations.request();
+      return status.isGranted;
+    }
+    return true;
+  }
 }
 
 /// Provider exposing the PermissionService singleton.

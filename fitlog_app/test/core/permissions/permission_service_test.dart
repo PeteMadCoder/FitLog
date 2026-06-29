@@ -99,6 +99,18 @@ void main() {
       expect(result, isTrue);
     });
 
+    test('hasIgnoreBatteryOptimizationsPermission returns status', () async {
+      mockStatusIndex = 1; // granted
+      final result = await permissionService.hasIgnoreBatteryOptimizationsPermission();
+      expect(result, isTrue);
+    });
+
+    test('requestIgnoreBatteryOptimizationsPermission requests and returns status', () async {
+      mockStatusIndex = 1; // granted
+      final result = await permissionService.requestIgnoreBatteryOptimizationsPermission();
+      expect(result, isTrue);
+    });
+
     test('openSettings triggers app settings open', () async {
       final result = await permissionService.openSettings();
       expect(result, isTrue);

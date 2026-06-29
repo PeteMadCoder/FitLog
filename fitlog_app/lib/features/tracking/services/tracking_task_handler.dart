@@ -43,6 +43,9 @@ class TrackingTaskHandler extends TaskHandler {
         _locationChannel.receiveBroadcastStream().listen((dynamic data) async {
       if (data is! Map) return;
 
+      final accuracy = data['accuracy'] is num ? (data['accuracy'] as num).toDouble() : null;
+      if (accuracy == null || accuracy > 35.0) return;
+
       final ts = data['timestamp'] is int
           ? DateTime.fromMillisecondsSinceEpoch(data['timestamp'] as int)
           : DateTime.now();
