@@ -2,8 +2,6 @@
 
 ## Fitlog app
 
-The breakdowns in the stats, when clicked should send the user to a page showcasing all of the workouts related to that type (aka the workouts whose stats are in the aggregated)
-
 Dark mode.
 
 Localize strings (i18n) and allow users to choose language in the settings tab.

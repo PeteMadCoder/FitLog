@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
 import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
-import 'package:fitlog_app/features/settings/views/settings_screen.dart';
 import 'package:fitlog_app/features/tracking/models/sport_type.dart';
 import 'package:fitlog_app/features/tracking/models/workout.dart';
 import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/features/analytics/views/sport_workouts_screen.dart';
 
 /// Screen displaying aggregated statistics across different timeframes.
 class StatsScreen extends ConsumerWidget {
@@ -840,11 +840,21 @@ class StatsScreen extends ConsumerWidget {
                 color: colorScheme.outlineVariant.withOpacity(0.5),
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SportWorkoutsScreen(sportId: sportId),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Row(
                     children: [
                       CircleAvatar(
@@ -954,7 +964,8 @@ class StatsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          );
+          ),
+        );
         }).toList(),
       ],
     );

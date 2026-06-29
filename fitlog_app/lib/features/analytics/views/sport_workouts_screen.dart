@@ -1,0 +1,281 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fitlog_app/features/analytics/providers/analytics_providers.dart';
+import 'package:fitlog_app/features/tracking/models/workout.dart';
+import 'package:fitlog_app/features/analytics/views/workout_detail_screen.dart';
+import 'package:fitlog_app/shared/extensions/duration_extensions.dart';
+import 'package:fitlog_app/core/utils/pace_calculator.dart';
+import 'package:fitlog_app/features/tracking/models/sport_type.dart';
+
+/// Screen displaying a list of workouts for a specific sport type in the selected timeframe.
+class SportWorkoutsScreen extends ConsumerWidget {
+  final String sportId;
+
+  const SportWorkoutsScreen({
+    super.key,
+    required this.sportId,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workoutsAsync = ref.watch(statsWorkoutsProvider);
+    final sportType = SportType.fromId(sportId);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${sportType.name} Workouts'),
+        centerTitle: false,
+      ),
+      body: workoutsAsync.when(
+        data: (workouts) {
+          final filtered = workouts.where((w) => w.sportType == sportId).toList();
+          if (filtered.isEmpty) {
+            return _buildEmptyState(context, sportType);
+          }
+          return ListView.builder(
+            itemCount: filtered.length,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            itemBuilder: (context, index) {
+              final workout = filtered[index];
+              return _buildWorkoutCard(context, workout);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Text(
+            'Error loading workouts: $err',
+            style: TextStyle(color: colorScheme.error),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, SportType sportType) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: sportType.color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                sportType.icon,
+                size: 64,
+                color: sportType.color,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No ${sportType.name} Workouts',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'There are no workouts of this type recorded in the selected timeframe.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final duration = Duration(seconds: workout.durationSeconds.toInt());
+    final distanceKm = workout.distanceMeters / 1000.0;
+
+    // Choose icon and colors dynamically from sport type model
+    final sport = SportType.fromId(workout.sportType);
+    final sportIcon = sport.icon;
+    final iconColor = sport.color;
+    Color iconBgColor = sport.color.withOpacity(0.12);
+
+    if (theme.brightness == Brightness.dark) {
+      iconBgColor = iconColor.withOpacity(0.2);
+    }
+
+    final formattedDate = _formatDateTime(workout.startTime);
+
+    // Calculate pace or speed
+    String speedOrPaceValue;
+    String speedOrPaceLabel;
+    if (workout.sportType.toLowerCase() == 'cycling') {
+      final speedKmH = workout.averageSpeed != null
+          ? workout.averageSpeed! * 3.6
+          : 0.0;
+      speedOrPaceValue = '${speedKmH.toStringAsFixed(1)} km/h';
+      speedOrPaceLabel = 'Speed';
+    } else {
+      final pace = PaceCalculator.calculateAveragePaceMinPerKm(
+        duration,
+        workout.distanceMeters,
+      );
+      speedOrPaceValue = '${PaceCalculator.formatPace(pace)}/km';
+      speedOrPaceLabel = 'Pace';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 1.5,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutDetailScreen(workoutId: workout.id),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              // Icon Container
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(sportIcon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+
+              // Details & Summary Columns
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      workout.name ??
+                          '${sport.name.toUpperCase()} WORKOUT',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      formattedDate,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Inline stats row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildMiniMetric(
+                          context,
+                          'Distance',
+                          '${distanceKm.toStringAsFixed(2)} km',
+                        ),
+                        _buildMiniMetric(
+                          context,
+                          'Duration',
+                          duration.toHoursMinutesSeconds(),
+                        ),
+                        _buildMiniMetric(
+                          context,
+                          speedOrPaceLabel,
+                          speedOrPaceValue,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Navigation Arrow
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurface.withOpacity(0.3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniMetric(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+            color: colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final month = monthNames[dt.month - 1];
+    final minuteStr = dt.minute.toString().padLeft(2, '0');
+    final hourStr = dt.hour.toString().padLeft(2, '0');
+    return '$month ${dt.day}, ${dt.year} at $hourStr:$minuteStr';
+  }
+}
